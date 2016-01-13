@@ -20,7 +20,7 @@ display(' ')
 
 for j = 1:length(txtFiles); % go through and extract data from each tablet
 
-    filed=0;
+    filed=0; %Keep track of weather we have filed away a txtFile or not
         
         if (txtFiles(j).bytes == 0) % delete files with 0 bytes.
             
