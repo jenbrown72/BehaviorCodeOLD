@@ -10,10 +10,13 @@ basisPropertiesID{4,1} = 'sessionDuration';
 sessionDuration = 4;
 basisPropertiesID{5,1} = 'totalStepsPerMin';
 totalStepsPerMin = 5;
+basisPropertiesID{6,1} = 'performance';
+performance = 6;
 
 basicProperties = {};
 encoder0Pos = 1;
 rawSessionTime = 7;
+trialType = 13;
 
 for i=1:length(DATA.allFiles);
     
@@ -31,6 +34,22 @@ for i=1:length(DATA.allFiles);
     totalSteps = nansum(diff(tempDATA(:,1))>0);
     basicProperties{totalStepsPerMin,i} = totalSteps/basicProperties{sessionDuration,i}; % Calculate running velocity
     
+    %Look at raw data to get stats on performance
+    findtrialType = diff(DATA.allFiles{i}.rawData(:,trialType));
+    [idx idx2] = find(findtrialType>0);
+        
+        temptrialTypes = DATA.allFiles{i}.rawData(idx+1,trialType);
+        
+    
+    
+    %Calculate how many of each trial type there were
+    HitTrialCount = sum(temptrialTypes==1);
+    FATrialCount = sum(temptrialTypes==2);
+    MissTrialCount = sum(temptrialTypes==3);
+    CRTrialCount = sum(temptrialTypes==4);
+    
+    basicProperties{performance,i} = (HitTrialCount+CRTrialCount)/(HitTrialCount+CRTrialCount+FATrialCount+MissTrialCount);
+
     %import as metaDATA cell array
     n=1;
     
@@ -103,13 +122,14 @@ for k = 1:length(unique_idx)
     end
     
 end
-
+%%
 
 figure(1);clf
-subplot(3,1,1)
+subplot(4,1,1)
 
-numPoints = 1:1:length(basicPropertiesToPlot);
-for j = 1:length(basicPropertiesToPlot);
+numPoints = 1:1:size((basicPropertiesToPlot), 2);
+for j = 1:length(numPoints);
+    subplot(4,1,1)
     plot(numPoints(j),basicPropertiesToPlot{5,j},'or','MarkerSize', 10,'MarkerFaceColor','r')
     hold on
 end
@@ -117,10 +137,8 @@ end
 ylabel('totalStepsPerMin');
 xlabel('Session Number');
 
-subplot(3,1,2)
-
-numPoints = 1:1:length(basicPropertiesToPlot);
-for j = 1:length(basicPropertiesToPlot);
+subplot(4,1,2)
+for j = 1:length(numPoints);
     plot(numPoints(j),basicPropertiesToPlot{4,j},'or','MarkerSize', 10,'MarkerFaceColor','r')
     hold on
 end
@@ -129,27 +147,26 @@ ylabel('sessionDuration');
 xlabel('Session Number');
 
 %plot primary session type per day
-subplot(3,1,3)
+subplot(4,1,3)
 SessionTypes = {'S1auto' ; 'S1'; 'S2'; 'S6'; 'S12'};
 
-for i=1:length(basicPropertiesToPlot)
-    if strcmp('S1auto', basicPropertiesToPlot{1,i})
-        colorCode(i,1) = 1; 
-    elseif strcmp('S1',basicPropertiesToPlot{1,i})
-        colorCode(i,1) = 2;
-    elseif strcmp('S2',basicPropertiesToPlot{1,i})
-        colorCode(i,1) = 3;
-    elseif strcmp('S6',basicPropertiesToPlot{1,i})
-        colorCode(i,1) = 4;
-    elseif strcmp('S12',basicPropertiesToPlot{1,i})
-        colorCode(i,1) = 5;
+for j = 1:length(numPoints);
+    if strcmp('S1auto', basicPropertiesToPlot{1,j})
+        colorCode(j,1) = 1; 
+    elseif strcmp('S1',basicPropertiesToPlot{1,j})
+        colorCode(j,1) = 2;
+    elseif strcmp('S2',basicPropertiesToPlot{1,j})
+        colorCode(j,1) = 3;
+    elseif strcmp('S6',basicPropertiesToPlot{1,j})
+        colorCode(j,1) = 4;
+    elseif strcmp('S12',basicPropertiesToPlot{1,j})
+        colorCode(j,1) = 5;
     end
 end
 
 ColorCodeColors = [1.0;0.8;0.6;0.4;0.2;0];
 
-numPoints = 1:1:length(basicPropertiesToPlot);
-for j = 1:length(basicPropertiesToPlot);
+for j = 1:length(numPoints);
     plot(numPoints(j),colorCode(j,1),'o','MarkerSize', 10, 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
     hold on
 end
@@ -161,6 +178,18 @@ set(gca,'YTickLabel',SessionTypes(1:max(colorCode)))
 %set(gca,'YTickLabel',{'S1Auto','S1', 'S2'})
 ylabel('Session Type');
 xlabel('Session Number');
+
+%plot performance
+subplot(4,1,4)
+
+for j = 1:length(numPoints);
+    plot(numPoints(j),basicPropertiesToPlot{6,j},'or','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
+    hold on
+end
+
+ylim([0 1])
+xlim([0 length(numPoints)])
+
 
 
 
