@@ -79,7 +79,9 @@ for i=1:length(DATA.allFiles);
     
     basicProperties{sessionType,i} = tempsessionType;
     
-end
+    
+
+
 
 for k = 1:length(basicProperties)
     
@@ -118,6 +120,20 @@ for k = 1:length(unique_idx)
         plotNumber = plotNumber+1;
         
     end
+    
+    numPoints = 1:1:size((basicPropertiesToPlot), 2);
+    
+        figure(2)
+for kk=1:length(numPoints)
+    subplot(length(numPoints),1,kk)
+trialTypecombo = [HitTrialCount MissTrialCount;FATrialCount CRTrialCount];
+bar(trialTypecombo, 'stacked');
+hold on
+XlableAxis = {'HIT/MISS'; 'FA/CR'};
+set(gca,'XTickLabel',XlableAxis);
+end
+end
+
     
 end
 %%
@@ -191,14 +207,3 @@ xlim([0 length(numPoints)])
 %plot sessionType performance to get an idea of how inclinded to lick the
 %mouse is
 
-    figure(2)
-    
-    numPoints = 1:1:size((basicPropertiesToPlot), 2);
-for i=1:length(numPoints)
-    subplot(length(numPoints),1,i)
-trialTypecombo = [HitTrialCount MissTrialCount;FATrialCount CRTrialCount];
-bar(trialTypecombo, 'stacked');
-hold on
-XlableAxis = {'HIT/MISS'; 'FA/CR'};
-set(gca,'XTickLabel',XlableAxis);
-end
