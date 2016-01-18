@@ -1,22 +1,41 @@
 
 load('DATA.mat')
-basisPropertiesID{1,1} = 'sessionType';
 sessionType = 1;
-basisPropertiesID{2,1} = 'date';
+basisPropertiesID{sessionType,1} = 'sessionType';
 date = 2;
-basisPropertiesID{3,1} = 'datenum';
+basisPropertiesID{date,1} = 'date';
 datenum = 3;
-basisPropertiesID{4,1} = 'sessionDuration';
+basisPropertiesID{datenum,1} = 'datenum';
 sessionDuration = 4;
-basisPropertiesID{5,1} = 'totalStepsPerMin';
+basisPropertiesID{sessionDuration,1} = 'sessionDuration';
 totalStepsPerMin = 5;
-basisPropertiesID{6,1} = 'performance';
+basisPropertiesID{totalStepsPerMin,1} = 'totalStepsPerMin';
 performance = 6;
+basisPropertiesID{performance,1} = 'performance';
+HIT = 7;
+basisPropertiesID{HIT,1} = 'performanceTypeHIT';
+FA = 8;
+basisPropertiesID{FA,1} = 'performanceTypeFA';
+MISS = 9;
+basisPropertiesID{MISS,1} = 'performanceTypeMISS';
+CR = 10;
+basisPropertiesID{CR,1} = 'performanceTypeCR';
+possibleAngles = [225;241;254;263;266;268;270;271;274;277;284;299;315];
+
+startAngleID = 10;
+basisPropertiesID{startAngleID,1} = 'anglePerformanceHIT';
+% FAangle = 12;
+% basisPropertiesID{FAangle,1} = 'anglePerformanceFA';
+% MISSangle = 13;
+% basisPropertiesID{MISSangle,1} = 'anglePerformanceMISS';
+% CRangle = 14;
+% basisPropertiesID{CRangle,1} = 'anglePerformanceCR';
 
 basicProperties = {};
 encoder0Pos = 1;
 rawSessionTime = 7;
 trialType = 13;
+angle = 11;
 
 for i=1:length(DATA.allFiles);
     
@@ -37,19 +56,42 @@ for i=1:length(DATA.allFiles);
     %Look at raw data to get stats on performance
     findtrialType = diff(DATA.allFiles{i}.rawData(:,trialType));
     [idx idx2] = find(findtrialType>0);
-        
-        temptrialTypes = DATA.allFiles{i}.rawData(idx+1,trialType);
-        
     
+    temptrialTypes = DATA.allFiles{i}.rawData(idx+1,trialType);
+    
+    tempAngleTypes = DATA.allFiles{i}.rawData(idx+1,angle);
+    % angleUsed = unique(tempAngleTypes);
+    % [idx] = find(angleUsed>0); %no 0
+    
+    for kk=1:length(possibleAngles)
+        idxAngles = find(tempAngleTypes==possibleAngles(kk));
+        performanceAngleTemp = temptrialTypes(idxAngles);
+        
+        HITangle = sum(performanceAngleTemp==1);
+        FAangle = sum(performanceAngleTemp==2);
+        MISSangle = sum(performanceAngleTemp==3);
+        CRangle = sum(performanceAngleTemp==4);
+        basicProperties{startAngleID+kk,i} =  (HITangle+CRangle)/(length(performanceAngleTemp));
+        basicProperties{startAngleID+length(possibleAngles)+kk,i} =  (HITangle+FAangle)/(MISSangle+CRangle+HITangle+FAangle);
+
+    end
+    
+    basisPropertiesID{startAngleID,1};
     
     %Calculate how many of each trial type there were
-    HitTrialCount = sum(temptrialTypes==1);
-    FATrialCount = sum(temptrialTypes==2);
-    MissTrialCount = sum(temptrialTypes==3);
-    CRTrialCount = sum(temptrialTypes==4);
+    basicProperties{7,1} = sum(temptrialTypes==1); %HitTrialCount
+    basicProperties{7,2} = sum(temptrialTypes==2); % FATrialCount
+    basicProperties{7,3} = sum(temptrialTypes==3); %MissTrialCount
+    basicProperties{7,4} = sum(temptrialTypes==4); %CRTrialCount
     
-    basicProperties{performance,i} = (HitTrialCount+CRTrialCount)/(HitTrialCount+CRTrialCount+FATrialCount+MissTrialCount);
-
+    basicProperties{performance,i} = (basicProperties{7,1}+basicProperties{7,4})/(sum([basicProperties{7,:}]));
+    
+    basicProperties{HIT,i} =  basicProperties{7,1}; %Hit
+    basicProperties{FA,i} =  basicProperties{7,2}; %FA
+    basicProperties{MISS,i} =  basicProperties{7,3}; %Miss
+    basicProperties{CR,i} =  basicProperties{7,4}; %CR
+    
+    
     %import as metaDATA cell array
     n=1;
     
@@ -58,17 +100,24 @@ for i=1:length(DATA.allFiles);
         
         match(j,1) = strcmp('Orientation Selected = ', metaData{j,1});
         
-        if (match(j,1)==1) && (metaData{j,2}>0)
-            tempAngles(n,1) = metaData{j,2};
-            n=n+1;
-        end
-        
-        %AutoReward
         if(strcmp('Auto reward = ', metaData{j,1}));
             autoSession = metaData{j,2};
         end
-        
     end
+    
+    [ind] = cell2mat(metaData(match,2));
+    tempAngles = ind(ind>0);
+    %         if (match(j,1)==1) && (metaData{j,2}>0)
+    %             tempAngles(n,1) = metaData{j,2};
+    %             n=n+1;
+    %         end
+    %
+    %         %AutoReward
+    %         if(strcmp('Auto reward = ', metaData{j,1}));
+    %             autoSession = metaData{j,2};
+    %         end
+    %
+    %     end
     
     %Define session type
     tempsessionType = strcat('S',num2str(length(tempAngles)));
@@ -81,7 +130,7 @@ for i=1:length(DATA.allFiles);
     
 end
 
-for k = 1:length(basicProperties)
+for k = 1:size((basicProperties),2)
     
     days{k} = basicProperties{2,k}(1:11);
     
@@ -123,7 +172,7 @@ end
 %%
 
 figure(1);clf
-subplot(4,1,1)
+subplot(5,1,1)
 
 numPoints = 1:1:size((basicPropertiesToPlot), 2);
 for j = 1:length(numPoints);
@@ -135,7 +184,7 @@ end
 ylabel('totalStepsPerMin');
 xlabel('Session Number');
 
-subplot(4,1,2)
+subplot(5,1,2)
 for j = 1:length(numPoints);
     plot(numPoints(j),basicPropertiesToPlot{4,j},'or','MarkerSize', 10,'MarkerFaceColor','r')
     hold on
@@ -145,12 +194,12 @@ ylabel('sessionDuration');
 xlabel('Session Number');
 
 %plot primary session type per day
-subplot(4,1,3)
+subplot(5,1,3)
 SessionTypes = {'S1auto' ; 'S1'; 'S2'; 'S6'; 'S12'};
 
 for j = 1:length(numPoints);
     if strcmp('S1auto', basicPropertiesToPlot{1,j})
-        colorCode(j,1) = 1; 
+        colorCode(j,1) = 1;
     elseif strcmp('S1',basicPropertiesToPlot{1,j})
         colorCode(j,1) = 2;
     elseif strcmp('S2',basicPropertiesToPlot{1,j})
@@ -178,7 +227,7 @@ ylabel('Session Type');
 xlabel('Session Number');
 
 %plot performance
-subplot(4,1,4)
+subplot(5,1,4)
 
 for j = 1:length(numPoints);
     plot(numPoints(j),basicPropertiesToPlot{6,j},'or','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
@@ -191,14 +240,55 @@ xlim([0 length(numPoints)])
 %plot sessionType performance to get an idea of how inclinded to lick the
 %mouse is
 
-    figure(2)
+
+plotTotal = 0;
+
+for h = 1:size((basicPropertiesToPlot), 2)
+
+    activeAngles = [basicPropertiesToPlot{11:23,h}];
     
-    numPoints = 1:1:size((basicPropertiesToPlot), 2);
-for i=1:length(numPoints)
-    subplot(length(numPoints),1,i)
-trialTypecombo = [HitTrialCount MissTrialCount;FATrialCount CRTrialCount];
-bar(trialTypecombo, 'stacked');
-hold on
-XlableAxis = {'HIT/MISS'; 'FA/CR'};
-set(gca,'XTickLabel',XlableAxis);
+if(sum(~isnan(activeAngles),2)>1) %if more than 2 angles were presented
+    plotTotal=plotTotal+1; 
+end
+
+end
+
+
+figure(2)
+currPlot = 1;
+
+for h = 1:size((basicPropertiesToPlot), 2)
+
+    activeAngles = [basicPropertiesToPlot{11:23,h}];
+    probLick = [basicPropertiesToPlot{24:36,h}];
+    plotAngles = possibleAngles;
+    [r,c] = find(isnan(activeAngles));
+    activeAngles(c) = [];
+    plotAngles(c) = [];
+    probLick(c) = [];
+    
+    trialTypecombo = [basicPropertiesToPlot{HIT,h} basicPropertiesToPlot{MISS,h};basicPropertiesToPlot{FA,h} basicPropertiesToPlot{CR,h}];
+
+    
+if(sum(~isnan(activeAngles),2)>1) %if more than 2 angles were presented
+    subplot(plotTotal,3,currPlot);
+    plot(plotAngles,activeAngles,'o-');
+    currPlot=currPlot+1;
+    Xlable = {'Angles'};
+     Ylable = {'Performance'};
+    
+    subplot(plotTotal,3,currPlot);
+      plot(plotAngles,probLick,'o-');
+    currPlot=currPlot+1;
+    
+     subplot(plotTotal,3,currPlot)
+     bar(trialTypecombo, 'stacked');
+     hold on
+     XlableAxis = {'HIT/MISS'; 'FA/CR'};
+     set(gca,'XTickLabel',XlableAxis);
+        currPlot=currPlot+1;
+    
+    
+end
+
 end
