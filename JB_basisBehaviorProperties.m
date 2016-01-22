@@ -20,7 +20,7 @@ MISS = 9;
 basisPropertiesID{MISS,1} = 'performanceTypeMISS';
 CR = 10;
 basisPropertiesID{CR,1} = 'performanceTypeCR';
-possibleAngles = [225;241;254;263;266;268;270;271;274;277;284;299;315];
+possibleAngles = [225;241;254;263;266;268;270;272;274;277;284;299;315];
 
 startAngleID = 10;
 basisPropertiesID{startAngleID,1} = 'anglePerformanceHIT';
@@ -36,11 +36,12 @@ encoder0Pos = 1;
 rawSessionTime = 7;
 trialType = 13;
 angle = 11;
+rewardDuration = 9;
 
 for i=1:length(DATA.allFiles);
     
     basicProperties{date,i} = DATA.allFiles{i}.date;
-    basicProperties{datenum,i} = DATA.allFiles{i}.datenum;
+    basicProperties{datenum,i} = DATA.allFiles{i}.dateFromFile;
     
     tempDATA = DATA.allFiles{i}.rawData;
     basicProperties{sessionDuration,i} = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
@@ -57,9 +58,9 @@ for i=1:length(DATA.allFiles);
     findtrialType = diff(DATA.allFiles{i}.rawData(:,trialType));
     [idx idx2] = find(findtrialType>0);
     
-    temptrialTypes = DATA.allFiles{i}.rawData(idx+1,trialType);
-    
-    tempAngleTypes = DATA.allFiles{i}.rawData(idx+1,angle);
+    temptrialTypes = DATA.allFiles{i}.rawData(idx+2,trialType);
+    tempAngleTypes = DATA.allFiles{i}.rawData(idx+2,angle);
+    tempRewardDuration = DATA.allFiles{i}.rawData(idx+2,rewardDuration);
     % angleUsed = unique(tempAngleTypes);
     % [idx] = find(angleUsed>0); %no 0
     
@@ -79,19 +80,13 @@ for i=1:length(DATA.allFiles);
     basisPropertiesID{startAngleID,1};
     
     %Calculate how many of each trial type there were
-    basicProperties{7,1} = sum(temptrialTypes==1); %HitTrialCount
-    basicProperties{7,2} = sum(temptrialTypes==2); % FATrialCount
-    basicProperties{7,3} = sum(temptrialTypes==3); %MissTrialCount
-    basicProperties{7,4} = sum(temptrialTypes==4); %CRTrialCount
+    basicProperties{HIT,i} = sum(temptrialTypes==1); %HitTrialCount
+    basicProperties{FA,i} = sum(temptrialTypes==2); % FATrialCount
+    basicProperties{MISS,i} = sum(temptrialTypes==3); %MissTrialCount
+    basicProperties{CR,i} = sum(temptrialTypes==4); %CRTrialCount
     
-    basicProperties{performance,i} = (basicProperties{7,1}+basicProperties{7,4})/(sum([basicProperties{7,:}]));
-    
-    basicProperties{HIT,i} =  basicProperties{7,1}; %Hit
-    basicProperties{FA,i} =  basicProperties{7,2}; %FA
-    basicProperties{MISS,i} =  basicProperties{7,3}; %Miss
-    basicProperties{CR,i} =  basicProperties{7,4}; %CR
-    
-    
+    basicProperties{performance,i} = (basicProperties{HIT,i}+basicProperties{CR,i})/(sum(temptrialTypes));
+
     %import as metaDATA cell array
     n=1;
     
@@ -132,51 +127,43 @@ end
 
 for k = 1:size((basicProperties),2)
     
-    days{k} = basicProperties{2,k}(1:11);
+    days{k} = basicProperties{3,k}(1:8);
     
 end
 
 plotNumber = 1;
 
 [un idx_last idx] = unique(days(1,:));
+idx = sort(idx);
 unique_idx = accumarray(idx(:),(1:length(idx))',[],@(x) {sort(x)});
 
-
 for k = 1:length(unique_idx)
-    
-    if length(unique_idx{k})==1
-        
-        basicPropertiesToPlot(:,plotNumber) = basicProperties(:,(unique_idx{k}));
-        
-        plotNumber = plotNumber+1;
-        
+    tempRunVal=[];
+    if length(unique_idx{k})==1   
+        basicPropertiesToPlot(:,plotNumber) = basicProperties(:,(unique_idx{k}));    
+        plotNumber = plotNumber+1;    
     elseif length(unique_idx{k})>1
-        
         t = unique_idx{k};
         
         for kk = 1:length(t)
-            
-            tempRunVal(kk,1) = basicProperties{4,t(kk)};
-            
+            tempRunVal(kk,1) = basicProperties{4,t(kk)};   
         end
         
         [id di] = max(tempRunVal); %find the data set where the mouse ran the most
-        
         basicPropertiesToPlot(:,plotNumber) = basicProperties(:,t(di));
-        
-        plotNumber = plotNumber+1;
-        
+        plotNumber = plotNumber+1; 
     end
-    
 end
 %%
 
 figure(1);clf
-subplot(5,1,1)
+noSubPlots = 4;
+subplot(noSubPlots,1,1)
+
 
 numPoints = 1:1:size((basicPropertiesToPlot), 2);
 for j = 1:length(numPoints);
-    subplot(4,1,1)
+    subplot(noSubPlots,1,1)
     plot(numPoints(j),basicPropertiesToPlot{5,j},'or','MarkerSize', 10,'MarkerFaceColor','r')
     hold on
 end
@@ -184,7 +171,7 @@ end
 ylabel('totalStepsPerMin');
 xlabel('Session Number');
 
-subplot(5,1,2)
+subplot(noSubPlots,1,2)
 for j = 1:length(numPoints);
     plot(numPoints(j),basicPropertiesToPlot{4,j},'or','MarkerSize', 10,'MarkerFaceColor','r')
     hold on
@@ -194,7 +181,7 @@ ylabel('sessionDuration');
 xlabel('Session Number');
 
 %plot primary session type per day
-subplot(5,1,3)
+subplot(noSubPlots,1,3)
 SessionTypes = {'S1auto' ; 'S1'; 'S2'; 'S6'; 'S12'};
 
 for j = 1:length(numPoints);
@@ -227,7 +214,7 @@ ylabel('Session Type');
 xlabel('Session Number');
 
 %plot performance
-subplot(5,1,4)
+subplot(noSubPlots,1,4)
 
 for j = 1:length(numPoints);
     plot(numPoints(j),basicPropertiesToPlot{6,j},'or','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
@@ -236,6 +223,8 @@ end
 
 ylim([0 1])
 xlim([0 length(numPoints)])
+ylabel('Performance');
+xlabel('Session Number');
 
 %plot sessionType performance to get an idea of how inclinded to lick the
 %mouse is
@@ -274,13 +263,17 @@ if(sum(~isnan(activeAngles),2)>1) %if more than 2 angles were presented
     subplot(plotTotal,3,currPlot);
     plot(plotAngles,activeAngles,'o-');
     currPlot=currPlot+1;
-    Xlable = {'Angles'};
-     Ylable = {'Performance'};
+    xlabel('Angles');
+     ylabel('Performance');
+     ylim([0 1])
     
     subplot(plotTotal,3,currPlot);
       plot(plotAngles,probLick,'o-');
     currPlot=currPlot+1;
-    
+        xlabel('Angles');
+     ylabel('Licking Probability');
+     ylim([0 1])
+     
      subplot(plotTotal,3,currPlot)
      bar(trialTypecombo, 'stacked');
      hold on

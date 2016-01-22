@@ -144,7 +144,7 @@ for i=1:size((D),1);
         
         %Extract date from filename
         
-        tempName = DATA.allFiles{currFileNo}.name;
+        tempName = DATA.allFiles{currFileNo}.name ;
 startIdx = findstr('_201',tempName);
 endIdx = findstr('_Box',tempName);
 tempName = tempName(startIdx:endIdx);
@@ -165,7 +165,7 @@ for i = 1:length(tempLocation)-1;
     
 end
 
-toDelete = strfind(tempName,'_');
+toDelete = strfind(tempName,'_')
 tempName(toDelete)=[];
 
 
@@ -207,7 +207,7 @@ disp(['Ordering DATA files'])
 
 for i=1:length(DATA.allFiles);
     
-    dataDate(i,1) = str2num(DATA.allFiles{i}.dateFromFile);
+    dataDate(i,1) = DATA.allFiles{i}.datenum;
     
 end
 
