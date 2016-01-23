@@ -1,3 +1,4 @@
+function [] = JB_basicBehaviorProperties
 
 load('DATA.mat')
 sessionType = 1;
@@ -182,7 +183,7 @@ xlabel('Session Number');
 
 %plot primary session type per day
 subplot(noSubPlots,1,3)
-SessionTypes = {'S1auto' ; 'S1'; 'S2'; 'S6'; 'S12'};
+SessionTypes = {'S1auto' ; 'S1'; 'S2'; 'S6'; 'S8'; 'S10'; 'S12'};
 
 for j = 1:length(numPoints);
     if strcmp('S1auto', basicPropertiesToPlot{1,j})
@@ -193,12 +194,16 @@ for j = 1:length(numPoints);
         colorCode(j,1) = 3;
     elseif strcmp('S6',basicPropertiesToPlot{1,j})
         colorCode(j,1) = 4;
-    elseif strcmp('S12',basicPropertiesToPlot{1,j})
+    elseif strcmp('S8',basicPropertiesToPlot{1,j})
         colorCode(j,1) = 5;
+           elseif strcmp('S10',basicPropertiesToPlot{1,j})
+        colorCode(j,1) = 6;
+           elseif strcmp('S12',basicPropertiesToPlot{1,j})
+        colorCode(j,1) = 7;
     end
 end
 
-ColorCodeColors = [1.0;0.8;0.6;0.4;0.2;0];
+ColorCodeColors = [1.0;0.9;0.8;0.6;0.4;0.2;0];
 
 for j = 1:length(numPoints);
     plot(numPoints(j),colorCode(j,1),'o','MarkerSize', 10, 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
@@ -243,7 +248,7 @@ end
 end
 
 
-figure(2)
+figure(2); clf;
 currPlot = 1;
 
 for h = 1:size((basicPropertiesToPlot), 2)
@@ -284,4 +289,5 @@ if(sum(~isnan(activeAngles),2)>1) %if more than 2 angles were presented
     
 end
 
+end
 end
