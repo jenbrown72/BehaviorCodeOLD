@@ -51,6 +51,9 @@ end
 cd(currDir);
 D = dir('*.txt');
 
+currDir = pwd;
+[~, deepestFolder,~] = fileparts(currDir);
+DATA.mouseID = deepestFolder;
 
 for i=1:size((D),1);
     
@@ -143,10 +146,14 @@ for i=1:size((D),1);
         disp(' ')
         filed = 1;
         
+             
+                
+                
+        
         %Extract date from filename
         
         tempName = DATA.allFiles{currFileNo}.name;
-        startIdx = findstr('_201',tempName);
+        startIdx = findstr('_201',tempName);  
 endIdx = findstr('_Box',tempName);
 tempName = tempName(startIdx:endIdx);
 tempLocation = findstr(tempName,'_');

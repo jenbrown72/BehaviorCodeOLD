@@ -1,4 +1,4 @@
-function [] = JB_basicBehaviorProperties
+function [] = JB_basicBehaviorProperties(currDirectory)
 
 load('DATA.mat')
 sessionType = 1;
@@ -34,6 +34,7 @@ basisPropertiesID{startAngleID,1} = 'anglePerformanceHIT';
 
 basicProperties = {};
 encoder0Pos = 1;
+LEDstate = 5;
 rawSessionTime = 7;
 trialType = 13;
 angle = 11;
@@ -41,11 +42,18 @@ rewardDuration = 9;
 
 for i=1:length(DATA.allFiles);
     
-    basicProperties{date,i} = DATA.allFiles{i}.date;
-    basicProperties{datenum,i} = DATA.allFiles{i}.dateFromFile;
+    metaData = DATA.allFiles{i}.metaData;
+    
+    %find out if this session used optogenetics
+    optoIdx = find(strcmp('Optogenetics = ', metaData));
+    tempOpto = metaData{optoIdx,2};
+     basicProperties{i,1}.optogenetics = tempOpto;
+    
+    basicProperties{i,1}.date = DATA.allFiles{i}.date;
+    basicProperties{i,1}.datenum = DATA.allFiles{i}.dateFromFile;
     
     tempDATA = DATA.allFiles{i}.rawData;
-    basicProperties{sessionDuration,i} = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
+    basicProperties{i,1}.sessionDuration = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
     threshold = 50000;
     aboveThreshold = find(tempDATA(:,encoder0Pos)>threshold);
     for j = 1:length(aboveThreshold)
@@ -53,45 +61,97 @@ for i=1:length(DATA.allFiles);
     end
     
     totalSteps = nansum(diff(tempDATA(:,1))>0);
-    basicProperties{totalStepsPerMin,i} = totalSteps/basicProperties{sessionDuration,i}; % Calculate running velocity
+    basicProperties{i,1}.totalStepsPerMin = totalSteps/basicProperties{i,1}.sessionDuration; % Calculate running velocity
     
     %Look at raw data to get stats on performance
     findtrialType = diff(DATA.allFiles{i}.rawData(:,trialType));
-    [idx idx2] = find(findtrialType>0);
+    [idx ~] = find(findtrialType>0);
     
     temptrialTypes = DATA.allFiles{i}.rawData(idx+2,trialType);
     tempAngleTypes = DATA.allFiles{i}.rawData(idx+2,angle);
     tempRewardDuration = DATA.allFiles{i}.rawData(idx+2,rewardDuration);
+    tempOptogenetics = DATA.allFiles{i}.rawData(idx-10,LEDstate);
     % angleUsed = unique(tempAngleTypes);
     % [idx] = find(angleUsed>0); %no 0
     
     for kk=1:length(possibleAngles)
+        
+        stimCount = 1;
+        nostimCount = 1;
+        
         idxAngles = find(tempAngleTypes==possibleAngles(kk));
         performanceAngleTemp = temptrialTypes(idxAngles);
+        
+        if ~isempty(idxAngles)
+            if tempOpto==1
+                
+                for ff = 1:length(idxAngles)
+                    
+                    if (tempOptogenetics(idxAngles(ff))==1)
+                        
+                        performanceAngleTempSTIM(stimCount,1) = temptrialTypes(idxAngles(ff));
+                        stimCount = stimCount+1;
+                        
+                    else
+                        
+                        performanceAngleTempNoSTIM(nostimCount,1) = temptrialTypes(idxAngles(ff));
+                        nostimCount = nostimCount+1;
+                    end
+                    
+                    
+                end
+                
+            end
+            
+        else 
+            
+            performanceAngleTempSTIM = [];
+             performanceAngleTempNoSTIM = [];
+            
+        end
         
         HITangle = sum(performanceAngleTemp==1);
         FAangle = sum(performanceAngleTemp==2);
         MISSangle = sum(performanceAngleTemp==3);
         CRangle = sum(performanceAngleTemp==4);
-        basicProperties{startAngleID+kk,i} =  (HITangle+CRangle)/(length(performanceAngleTemp));
-        basicProperties{startAngleID+length(possibleAngles)+kk,i} =  (HITangle+FAangle)/(MISSangle+CRangle+HITangle+FAangle);
-
+        %Performance at each angle
+        basicProperties{i,1}.performance{kk} =  (HITangle+CRangle)/(length(performanceAngleTemp));
+        %Probability of licking
+        basicProperties{i,1}.probLicking{kk} =  (HITangle+FAangle)/(MISSangle+CRangle+HITangle+FAangle);
+        
+        if (tempOpto==1)
+            HITangleSTIM = sum(performanceAngleTempSTIM==1);
+            FAangleSTIM = sum(performanceAngleTempSTIM==2);
+            MISSangleSTIM = sum(performanceAngleTempSTIM==3);
+            CRangleSTIM = sum(performanceAngleTempSTIM==4);
+            basicProperties{i,1}.performanceSTIM{kk} =  (HITangleSTIM+CRangleSTIM)/(length(performanceAngleTempSTIM));
+            basicProperties{i,1}.probLickingSTIM{kk} =  (HITangleSTIM+FAangleSTIM)/(MISSangleSTIM+CRangleSTIM+HITangleSTIM+FAangleSTIM);
+            
+            HITanglenoSTIM = sum(performanceAngleTempNoSTIM==1);
+            FAanglenoSTIM = sum(performanceAngleTempNoSTIM==2);
+            MISSanglenoSTIM = sum(performanceAngleTempNoSTIM==3);
+            CRanglenoSTIM = sum(performanceAngleTempNoSTIM==4);
+            basicProperties{i,1}.performanceNoSTIM{kk} =  (HITanglenoSTIM+CRanglenoSTIM)/(length(performanceAngleTempNoSTIM));
+            basicProperties{i,1}.probLickingNoSTIM{kk} =  (HITanglenoSTIM+FAanglenoSTIM)/(MISSanglenoSTIM+CRanglenoSTIM+HITanglenoSTIM+FAanglenoSTIM);
+        end
+        
     end
     
     basisPropertiesID{startAngleID,1};
     
     %Calculate how many of each trial type there were
-    basicProperties{HIT,i} = sum(temptrialTypes==1); %HitTrialCount
-    basicProperties{FA,i} = sum(temptrialTypes==2); % FATrialCount
-    basicProperties{MISS,i} = sum(temptrialTypes==3); %MissTrialCount
-    basicProperties{CR,i} = sum(temptrialTypes==4); %CRTrialCount
+    basicProperties{i,1}.HIT = sum(temptrialTypes==1); %HitTrialCount
+    basicProperties{i,1}.FA = sum(temptrialTypes==2); % FATrialCount
+    basicProperties{i,1}.MISS = sum(temptrialTypes==3); %MissTrialCount
+    basicProperties{i,1}.CR = sum(temptrialTypes==4); %CRTrialCount
     
-    basicProperties{performance,i} = (basicProperties{HIT,i}+basicProperties{CR,i})/(sum(temptrialTypes));
-
+    basicProperties{i,1}.sessionperformance = (basicProperties{i,1}.HIT+basicProperties{i,1}.CR)/(length(temptrialTypes));
+    
     %import as metaDATA cell array
     n=1;
     
-    metaData = DATA.allFiles{i}.metaData;
+    
+    
     for j=1:length(metaData)
         
         match(j,1) = strcmp('Orientation Selected = ', metaData{j,1});
@@ -99,6 +159,8 @@ for i=1:length(DATA.allFiles);
         if(strcmp('Auto reward = ', metaData{j,1}));
             autoSession = metaData{j,2};
         end
+        
+        
     end
     
     [ind] = cell2mat(metaData(match,2));
@@ -122,50 +184,53 @@ for i=1:length(DATA.allFiles);
         tempsessionType = strcat(tempsessionType,'auto');
     end
     
-    basicProperties{sessionType,i} = tempsessionType;
+    basicProperties{i,1}.sessionType = tempsessionType;
     
 end
 
-for k = 1:size((basicProperties),2)
+for k = 1:length(basicProperties),
     
-    days{k} = basicProperties{3,k}(1:8);
+    days{k,1} = basicProperties{k,1}.datenum(1:8);
     
 end
 
 plotNumber = 1;
 
-[un idx_last idx] = unique(days(1,:));
+[un idx_last idx] = unique(days(:,1));
 idx = sort(idx);
 unique_idx = accumarray(idx(:),(1:length(idx))',[],@(x) {sort(x)});
 
 for k = 1:length(unique_idx)
     tempRunVal=[];
-    if length(unique_idx{k})==1   
-        basicPropertiesToPlot(:,plotNumber) = basicProperties(:,(unique_idx{k}));    
-        plotNumber = plotNumber+1;    
+    if length(unique_idx{k})==1
+        basicPropertiesToPlot{plotNumber,1} = basicProperties{unique_idx{k}};
+        plotNumber = plotNumber+1;
     elseif length(unique_idx{k})>1
         t = unique_idx{k};
         
         for kk = 1:length(t)
-            tempRunVal(kk,1) = basicProperties{4,t(kk)};   
+            tempRunVal(kk,1) = basicProperties{t(kk)}.sessionDuration;
         end
         
         [id di] = max(tempRunVal); %find the data set where the mouse ran the most
-        basicPropertiesToPlot(:,plotNumber) = basicProperties(:,t(di));
-        plotNumber = plotNumber+1; 
+        basicPropertiesToPlot{plotNumber,1} = basicProperties{t(di)};
+        plotNumber = plotNumber+1;
     end
 end
 %%
 
-figure(1);clf
+figure;clf
+%figure('Visible','off');clf;
+tempTitle = DATA.mouseID;
+tempTitle(findstr(tempTitle,'_'))=[];
+set(gcf,'name',tempTitle,'numbertitle','off');
+
 noSubPlots = 4;
 subplot(noSubPlots,1,1)
-
-
-numPoints = 1:1:size((basicPropertiesToPlot), 2);
+numPoints = 1:1:length(basicPropertiesToPlot);
 for j = 1:length(numPoints);
     subplot(noSubPlots,1,1)
-    plot(numPoints(j),basicPropertiesToPlot{5,j},'or','MarkerSize', 10,'MarkerFaceColor','r')
+    plot(numPoints(j),basicPropertiesToPlot{j}.totalStepsPerMin,'or','MarkerSize', 10,'MarkerFaceColor','r')
     hold on
 end
 
@@ -174,7 +239,7 @@ xlabel('Session Number');
 
 subplot(noSubPlots,1,2)
 for j = 1:length(numPoints);
-    plot(numPoints(j),basicPropertiesToPlot{4,j},'or','MarkerSize', 10,'MarkerFaceColor','r')
+    plot(numPoints(j),basicPropertiesToPlot{j}.sessionDuration,'or','MarkerSize', 10,'MarkerFaceColor','r')
     hold on
 end
 
@@ -186,19 +251,19 @@ subplot(noSubPlots,1,3)
 SessionTypes = {'S1auto' ; 'S1'; 'S2'; 'S6'; 'S8'; 'S10'; 'S12'};
 
 for j = 1:length(numPoints);
-    if strcmp('S1auto', basicPropertiesToPlot{1,j})
+    if strcmp('S1auto', basicPropertiesToPlot{j,1}.sessionType)
         colorCode(j,1) = 1;
-    elseif strcmp('S1',basicPropertiesToPlot{1,j})
+    elseif strcmp('S1',basicPropertiesToPlot{j,1}.sessionType)
         colorCode(j,1) = 2;
-    elseif strcmp('S2',basicPropertiesToPlot{1,j})
+    elseif strcmp('S2',basicPropertiesToPlot{j,1}.sessionType)
         colorCode(j,1) = 3;
-    elseif strcmp('S6',basicPropertiesToPlot{1,j})
+    elseif strcmp('S6',basicPropertiesToPlot{j,1}.sessionType)
         colorCode(j,1) = 4;
-    elseif strcmp('S8',basicPropertiesToPlot{1,j})
+    elseif strcmp('S8',basicPropertiesToPlot{j,1}.sessionType)
         colorCode(j,1) = 5;
-           elseif strcmp('S10',basicPropertiesToPlot{1,j})
+    elseif strcmp('S10',basicPropertiesToPlot{j,1}.sessionType)
         colorCode(j,1) = 6;
-           elseif strcmp('S12',basicPropertiesToPlot{1,j})
+    elseif strcmp('S12',basicPropertiesToPlot{j,1}.sessionType)
         colorCode(j,1) = 7;
     end
 end
@@ -222,7 +287,7 @@ xlabel('Session Number');
 subplot(noSubPlots,1,4)
 
 for j = 1:length(numPoints);
-    plot(numPoints(j),basicPropertiesToPlot{6,j},'or','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
+    plot(numPoints(j),basicPropertiesToPlot{j,1}.sessionperformance,'or','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
     hold on
 end
 
@@ -231,63 +296,123 @@ xlim([0 length(numPoints)])
 ylabel('Performance');
 xlabel('Session Number');
 
+baseFileName = strcat(tempTitle); %save old figure
+saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\basicSessionProperties',baseFileName),'jpeg');
+
 %plot sessionType performance to get an idea of how inclinded to lick the
 %mouse is
 
-
-plotTotal = 0;
-
-for h = 1:size((basicPropertiesToPlot), 2)
-
-    activeAngles = [basicPropertiesToPlot{11:23,h}];
-    
-if(sum(~isnan(activeAngles),2)>1) %if more than 2 angles were presented
-    plotTotal=plotTotal+1; 
-end
-
-end
-
-
-figure(2); clf;
+plotTotal = 4;
+numFigs = 1;
+%figure('Visible','off');clf;
+figure;clf;
+set(gcf,'name',tempTitle,'numbertitle','off')
 currPlot = 1;
 
-for h = 1:size((basicPropertiesToPlot), 2)
-
-    activeAngles = [basicPropertiesToPlot{11:23,h}];
-    probLick = [basicPropertiesToPlot{24:36,h}];
+for h = 1:length(numPoints)
+    saved = 0;
+    activeAngles = cell2mat(basicPropertiesToPlot{h,1}.performance);
+    probLick = cell2mat(basicPropertiesToPlot{h,1}.probLicking);
     plotAngles = possibleAngles;
-    [r,c] = find(isnan(activeAngles));
+    [~,c] = find(isnan(activeAngles));
     activeAngles(c) = [];
     plotAngles(c) = [];
     probLick(c) = [];
     
-    trialTypecombo = [basicPropertiesToPlot{HIT,h} basicPropertiesToPlot{MISS,h};basicPropertiesToPlot{FA,h} basicPropertiesToPlot{CR,h}];
-
+    trialTypecombo = [basicPropertiesToPlot{h,1}.HIT basicPropertiesToPlot{h,1}.MISS;basicPropertiesToPlot{h,1}.FA basicPropertiesToPlot{h,1}.CR];
     
-if(sum(~isnan(activeAngles),2)>1) %if more than 2 angles were presented
-    subplot(plotTotal,3,currPlot);
-    plot(plotAngles,activeAngles,'o-');
-    currPlot=currPlot+1;
-    xlabel('Angles');
-     ylabel('Performance');
-     ylim([0 1])
-    
-    subplot(plotTotal,3,currPlot);
-      plot(plotAngles,probLick,'o-');
-    currPlot=currPlot+1;
-        xlabel('Angles');
-     ylabel('Licking Probability');
-     ylim([0 1])
-     
-     subplot(plotTotal,3,currPlot)
-     bar(trialTypecombo, 'stacked');
-     hold on
-     XlableAxis = {'HIT/MISS'; 'FA/CR'};
-     set(gca,'XTickLabel',XlableAxis);
+    if(length(activeAngles)>2) %if more than 2 angles were presented
+        subplot(plotTotal,3,currPlot);
+        plot(plotAngles,activeAngles,'o-');
         currPlot=currPlot+1;
+        xlabel('Angles');
+        ylabel('Performance');
+        ylim([0 1])
+        
+        subplot(plotTotal,3,currPlot);
+        plot(plotAngles,probLick,'o-');
+        currPlot=currPlot+1;
+        xlabel('Angles');
+        ylabel('Licking Probability');
+        ylim([0 1])
+        
+        subplot(plotTotal,3,currPlot)
+        bar(trialTypecombo, 'stacked');
+        hold on
+        XlableAxis = {'HIT/MISS'; 'FA/CR'};
+        set(gca,'XTickLabel',XlableAxis);
+        currPlot=currPlot+1;
+        
+        if rem(currPlot,plotTotal)==1 %if the value is divisable by 4 - open a new plot
+            baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
+            saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
+            saved = 1;
+            figure;clf;
+            numFigs = numFigs+1;
+            currPlot = 1;
+        end
+        
+    end
+    
+    if saved==0
+        
+        baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
+        saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
+        
+    end
+    
     
     
 end
 
+
+plotTotal = 4;
+numFigs = 1;
+%figure('Visible','off');clf;
+figure;clf;
+set(gcf,'name',tempTitle,'numbertitle','off')
+currPlot = 1;
+
+for h = 1:length(numPoints)
+    
+    if (basicPropertiesToPlot{h,1}.optogenetics)
+        
+    activeAnglesSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceSTIM);
+    activeAnglesnoSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceNoSTIM);
+    probLickSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingSTIM);
+    probLickNoSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingNoSTIM);
+    plotAngles = possibleAngles;
+    [~,c] = find(isnan(activeAnglesSTIM));
+    activeAnglesSTIM(c) = [];
+    activeAnglesnoSTIM(c) = [];
+    plotAngles(c) = [];
+    probLickSTIM(c) = [];
+    probLickNoSTIM(c) = [];
+
+  subplot(plotTotal,2,currPlot);
+        plot(plotAngles,activeAnglesSTIM,'o-r');
+        hold on;
+         plot(plotAngles,activeAnglesnoSTIM,'o-k');
+        currPlot=currPlot+1;
+        xlabel('Angles');
+        ylabel('Performance');
+        ylim([0 1])
+        
+        subplot(plotTotal,2,currPlot);
+        plot(plotAngles,probLickSTIM,'o-r');
+        hold on;
+          plot(plotAngles,probLickNoSTIM,'o-k');
+        currPlot=currPlot+1;
+        xlabel('Angles');
+        ylabel('Licking Probability');
+        ylim([0 1])
+        
+    end
+    
+            baseFileName = strcat(tempTitle); %save old figure
+        saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\optogenetics',baseFileName),'jpeg');
+    
 end
+
+        
 end
