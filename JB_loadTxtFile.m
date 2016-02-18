@@ -1,4 +1,4 @@
-function [newTxtFileCount] = JB_loadTxtFile(MouseID)
+function [newTxtFileCount] = JB_loadTxtFileN(MouseID)
 
 % Initialize variables.
 delimiter = ',';
