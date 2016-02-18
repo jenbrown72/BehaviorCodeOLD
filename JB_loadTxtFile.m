@@ -1,4 +1,4 @@
-function [DATA, loadedFiles] = JB_loadTxtFile(MouseID)
+function [newTxtFileCount] = JB_loadTxtFileTEST(MouseID)
 
 % Initialize variables.
 delimiter = ',';
@@ -12,78 +12,66 @@ formatSpecTempDATA = '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%[^\n\r]';
 
 startDir = 'C:\Users\adesniklab\Documents\BehaviorRawData\MouseID\';
 
-if nargin==1; % if a filename was inputted into function 
-    currfile = MouseID; 
+if nargin==1; % if a filename was inputted into function
+    
+    currfile = MouseID;
     tempdataDir = char(strcat(startDir, currfile, '\txtFiles'));
     cd(tempdataDir);
+    
     display(' ')
     display(' ')
     disp(['________________Analysing file: ' currfile ' __________________________________'])
     display(' ')
-    display(' ') 
+    display(' ')
 end
 
 %Check to see if files have already been loaded
 DATA.loadedFiles = [];
+DATA.allFiles = [];
 
 %Initialise variables
-% number of angles used in behavior
-angleNumber = {'Auto','S1','S2','S6','S12'};
+% Angles used in behavior
 stimAngles = [225, 241, 254, 263, 266, 268, 270, 272, 274, 277, 284, 299, 315];
-
-for i = 1:length(angleNumber)
-    DATA.(char((angleNumber{i}))) = [];
-end
-
 
 currDir = cd;
 dataDir = strcat(currDir,'\txtFiles\data');
 cd(dataDir);
 olderDir = dir('DATA.mat');
 
+%if there is already a DATA.mat file - reload this
 if ~isempty(olderDir)
     load('DATA.mat')
     loaded = 1;
-    
 else
     loaded = 0;
 end
 
 cd(currDir);
-D = dir('*.txt');
+D = dir('*.txt'); %create a list of the txt files in the current directory
+
+currDir = pwd; %identify the current folder
+[~, deepestFolder,~] = fileparts(currDir); %returns the pathstr, name and extension. we care about the name
+DATA.mouseID = deepestFolder;
+newTxtFileCount = 0;
 
 for i=1:size((D),1);
-    
-    filed = 0;
-    %    for i=1;
-    
+    filed = 0; %keep track of the txtfiles loaded
     if (loaded==1)
-        
         if(any(strcmp(D(i).name, DATA.loadedFiles))) % if already loaded this data, move on
             disp(['DATA file: ' D(i).name ' Already Loaded'])
             filed = 1;
-            
-            %   continue
-            
         end
-        
     end
     
     if(filed==0)
-        
-        
-        %Load meta data
         % Open the text file.
         fileID = fopen(D(i).name,'r');
         % Read columns of data according to format string.
-        % This call is based on the structure of the file used to generate this
-        % code. If an error occurs for a different file, try regenerating the code
-        % from the Import Tool.
         dataArray = textscan(fileID, formatSpecMetaDATA, endRow, 'Delimiter', delimiter, 'ReturnOnError', false);
         dataArrayTempDATA = textscan(fileID, formatSpecTempDATA, 'Delimiter', delimiter, 'HeaderLines' ,startRow-1, 'ReturnOnError', false);
-
         % Close the text file.
         fclose(fileID);
+        
         %For MetaDATA
         % Convert the contents of columns containing numeric strings to numbers.
         % Replace non-numeric strings with NaN.
@@ -126,152 +114,58 @@ for i=1:size((D),1);
         % Create output variable
         metaData = raw;
         
-%         %For TempDATA
-%         
-%         % Convert the contents of columns containing numeric strings to numbers.
-% % Replace non-numeric strings with NaN.
-% raw = repmat({''},length(dataArrayTempDATA{1}),length(dataArrayTempDATA)-1);
-% for col=1:length(dataArrayTempDATA)-1
-%     raw(1:length(dataArrayTempDATA{col}),col) = dataArrayTempDATA{col};
-% end
-% numericData = NaN(size(dataArrayTempDATA{1},1),size(dataArrayTempDATA,2));
-% 
-% for col=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
-%     % Converts strings in the input cell array to numbers. Replaced non-numeric
-%     % strings with NaN.
-%     rawData = dataArrayTempDATA{col};
-%     for row=1:size(rawData, 1);
-%         % Create a regular expression to detect and remove non-numeric prefixes and
-%         % suffixes.
-%         regexstr = '(?<prefix>.*?)(?<numbers>([-]*(\d+[\,]*)+[\.]{0,1}\d*[eEdD]{0,1}[-+]*\d*[i]{0,1})|([-]*(\d+[\,]*)*[\.]{1,1}\d+[eEdD]{0,1}[-+]*\d*[i]{0,1}))(?<suffix>.*)';
-%         try
-%             result = regexp(rawData{row}, regexstr, 'names');
-%             numbers = result.numbers;
-%             
-%             % Detected commas in non-thousand locations.
-%             invalidThousandsSeparator = false;
-%             if any(numbers==',');
-%                 thousandsRegExp = '^\d+?(\,\d{3})*\.{0,1}\d*$';
-%                 if isempty(regexp(thousandsRegExp, ',', 'once'));
-%                     numbers = NaN;
-%                     invalidThousandsSeparator = true;
-%                 end
-%             end
-%             % Convert numeric strings to numbers.
-%             if ~invalidThousandsSeparator;
-%                 numbers = textscan(strrep(numbers, ',', ''), '%f');
-%                 numericData(row, col) = numbers{1};
-%                 raw{row, col} = numbers{1};
-%             end
-%         catch me
-%         end
-%     end
-% end
-% 
-% % Replace non-numeric cells with NaN
-% R = cellfun(@(x) ~isnumeric(x) && ~islogical(x),raw); % Find non-numeric cells
-% raw(R) = {NaN}; % Replace non-numeric cells
-% 
-% % Create output variable
-% tempDATA = cell2mat(raw);
-% 
-%     end
-%     
-% end
-
-
-        
-        tempDATA = csvread(D(i).name,26,0); % Dont read first line - sometimes contains a string 'A'
+        %For tempDATA
+        tempDATA = csvread(D(i).name,26,0); % Dont read first line - sometimes contains a string 'A', start from row 26 as the top is metaData
         tempDATA(length(tempDATA),:) = []; %Delete the last line incase not fully read
-        
-    end
         
         disp(' ')
         disp(['Loading file: ' D(i).name])
         
-        C = unique(tempDATA(:,11));
+        C = unique(tempDATA(:,11)); %Identify how many angles were presented
         stimNumber = size(find(ismember(stimAngles, C)),2);
+        currFileNo = length(DATA.loadedFiles)+1;
         
-        if tempDATA(1,8) ==1; %% auto trial
-            
-            Key = 'Auto';
-            Index = strfind(angleNumber,Key);
-            
-            for f=1:length(Index);
-                
-                if Index{f}==1
-                    currFileNo = length(DATA.Auto)+1;
-                    
-                    DATA.(angleNumber{f}){currFileNo} = D(i);
-                    DATA.(angleNumber{f}){currFileNo}.rawData = tempDATA;
-                    DATA.(angleNumber{f}){currFileNo}.metaData = metaData;
-                    
-                    DATA.loadedFiles{i,1} = D(i).name;
-                    DATA.loadedFiles{i,2} = D(i).datenum;
-                    DATA.loadedFiles{i,3} = D(i).date;
-                    
-                    disp([(angleNumber{f}) ': ' D(i).name ])
-                    disp(' ')
-                    filed = 1;
-                    
-                else
-                    continue
-                end
-                
+        %Save into data format
+        DATA.allFiles{currFileNo} = D(i);
+        DATA.allFiles{currFileNo}.rawData = tempDATA;
+        DATA.allFiles{currFileNo}.metaData = metaData;
+        DATA.loadedFiles{1,currFileNo} = D(i).name;
+        disp(['loaded: ' D(i).name ])
+        disp(' ')
+        filed = 1;
+        newTxtFileCount = newTxtFileCount+1;
+        
+        %Extract date from filename
+        tempName = DATA.allFiles{currFileNo}.name;
+        startIdx = findstr('_201',tempName);
+        endIdx = findstr('_Box',tempName);
+        tempName = tempName(startIdx:endIdx);
+        tempLocation = findstr(tempName,'_');
+        
+        %add a 0to the start of file date names so that sort with work later, e.g.
+        %7 will be 07.
+        for i = 1:length(tempLocation)-1;
+            if(tempLocation(i+1)-tempLocation(i))==2;
+                startName = tempName(1:tempLocation(i));
+                endName = tempName(tempLocation(i)+1:end);
+                tempName = strcat(startName,'0',endName);
+                tempLocation = tempLocation+1;
             end
-            
-        else
-            
-            for k=1:length(angleNumber)
-                
-                Key = 'S';
-                Index = strfind(angleNumber{k},Key);
-                
-                if ~isempty(Index)
-                    
-                    Value = sscanf(angleNumber{k}(Index(1) + length(Key):end), '%g', 1);
-                    
-                    if (Value==stimNumber)
-                        
-                        disp([angleNumber{k} ': ' D(i).name ])
-                        disp(' ')
-                        
-                        currFileNo = length(DATA.(angleNumber{k}))+1;
-                        
-                        DATA.(angleNumber{k}){currFileNo} = D(i);
-                        DATA.(angleNumber{k}){currFileNo}.rawData = tempDATA;
-                        DATA.(angleNumber{k}){currFileNo}.metaData = metaData;
-                        
-                        DATA.loadedFiles{i,1} = D(i).name;
-                        DATA.loadedFiles{i,2} = D(i).datenum;
-                        DATA.loadedFiles{i,3} = D(i).date;
-                        filed = 1;
-                        
-                    end
-                    
-                else
-                    continue
-                end
-                
-            end
-            
         end
-        
-   % end
+        toDelete = strfind(tempName,'_');
+        tempName(toDelete)=[];
+        DATA.allFiles{currFileNo}.dateFromFile = tempName;
+    end
     
     if (filed==0)
-        
         countNumber = max(tempDATA(:,6));
-        
         if (countNumber<12)
-            
             msgbox(strcat(D(i).name,' was not uploaded - count < 12'));
             disp(' ')
             disp(' ')
             disp(['WARNING..... NO FOLDER FOR: ' D(i).name ])
             disp(' ')
             disp(' ')
-            
         else
             msgbox(strcat(D(i).name,' was not uploaded - stimNumber = ' , num2str(stimNumber)));
             disp(' ')
@@ -279,7 +173,6 @@ for i=1:size((D),1);
             disp(['WARNING..... NO FOLDER FOR: ' D(i).name ])
             disp(' ')
             disp(' ')
-            
         end
     end
 end
@@ -287,6 +180,27 @@ end
 disp(['Upload complete'])
 curr = cd;
 cd(strcat(curr, '\txtFiles\data'))
-save('DATA.mat', 'DATA', '-v7.3')
+
+if newTxtFileCount>0
+    disp(['Ordering DATA files'])
+    for i=1:length(DATA.allFiles);
+        dataDate(i,1) = str2num(DATA.allFiles{i}.dateFromFile);
+    end
+    
+    [~,S] = sort(dataDate);
+    
+    for j = 1:length(S)
+        sortedFiles{j} = DATA.allFiles{S(j)};
+        sortedLoadedFiles{j} = DATA.loadedFiles{S(j)};
+    end
+    
+    %save files
+    DATA.allFiles = sortedFiles;
+    DATA.loadedFiles = sortedLoadedFiles;
+    save('DATA.mat', 'DATA', '-v7.3')
+    
+else
+    disp(['No new files to analyse'])
+end
 
 end
