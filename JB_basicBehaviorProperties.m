@@ -44,10 +44,20 @@ for i=1:length(DATA.allFiles);
     
     metaData = DATA.allFiles{i}.metaData;
     
+    %find out if this session included a negative stim
+    
+    puffIdx = find(strcmp('Negative Reinforcer = ', metaData));
+    puffUsed = metaData{puffIdx,2};
+    basicProperties{i,1}.negReinforcer = puffUsed;
+    
+    waterSchIdx = find(strcmp('Water Schedule = ', metaData));
+    waterSchUsed = metaData{waterSchIdx,2};
+    basicProperties{i,1}.waterSchedule = waterSchUsed;
+    
     %find out if this session used optogenetics
     optoIdx = find(strcmp('Optogenetics = ', metaData));
     tempOpto = metaData{optoIdx,2};
-     basicProperties{i,1}.optogenetics = tempOpto;
+    basicProperties{i,1}.optogenetics = tempOpto;
     
     basicProperties{i,1}.date = DATA.allFiles{i}.date;
     basicProperties{i,1}.datenum = DATA.allFiles{i}.dateFromFile;
@@ -65,7 +75,7 @@ for i=1:length(DATA.allFiles);
     
     %Look at raw data to get stats on performance
     findtrialType = diff(DATA.allFiles{i}.rawData(:,trialType));
-    [idx ~] = find(findtrialType>0);
+    [idx, ~] = find(findtrialType>0);
     
     temptrialTypes = DATA.allFiles{i}.rawData(idx+2,trialType);
     tempAngleTypes = DATA.allFiles{i}.rawData(idx+2,angle);
@@ -75,6 +85,7 @@ for i=1:length(DATA.allFiles);
     % [idx] = find(angleUsed>0); %no 0
     
     for kk=1:length(possibleAngles)
+     %   clear performanceAngleTempSTIM performanceAngleTempNoSTIM;
         
         stimCount = 1;
         nostimCount = 1;
@@ -103,10 +114,10 @@ for i=1:length(DATA.allFiles);
                 
             end
             
-        else 
+        else
             
-            performanceAngleTempSTIM = [];
-             performanceAngleTempNoSTIM = [];
+            performanceAngleTempSTIM = nan;
+            performanceAngleTempNoSTIM = nan;
             
         end
         
@@ -119,20 +130,28 @@ for i=1:length(DATA.allFiles);
         %Probability of licking
         basicProperties{i,1}.probLicking{kk} =  (HITangle+FAangle)/(MISSangle+CRangle+HITangle+FAangle);
         
-        if (tempOpto==1)
-            HITangleSTIM = sum(performanceAngleTempSTIM==1);
-            FAangleSTIM = sum(performanceAngleTempSTIM==2);
-            MISSangleSTIM = sum(performanceAngleTempSTIM==3);
-            CRangleSTIM = sum(performanceAngleTempSTIM==4);
-            basicProperties{i,1}.performanceSTIM{kk} =  (HITangleSTIM+CRangleSTIM)/(length(performanceAngleTempSTIM));
-            basicProperties{i,1}.probLickingSTIM{kk} =  (HITangleSTIM+FAangleSTIM)/(MISSangleSTIM+CRangleSTIM+HITangleSTIM+FAangleSTIM);
+        if ~isempty(idxAngles)
+            if (tempOpto==1)
+                HITangleSTIM = sum(performanceAngleTempSTIM==1);
+                FAangleSTIM = sum(performanceAngleTempSTIM==2);
+                MISSangleSTIM = sum(performanceAngleTempSTIM==3);
+                CRangleSTIM = sum(performanceAngleTempSTIM==4);
+                basicProperties{i,1}.performanceSTIM{kk} =  (HITangleSTIM+CRangleSTIM)/(length(performanceAngleTempSTIM));
+                basicProperties{i,1}.probLickingSTIM{kk} =  (HITangleSTIM+FAangleSTIM)/(MISSangleSTIM+CRangleSTIM+HITangleSTIM+FAangleSTIM);
+                
+                HITanglenoSTIM = sum(performanceAngleTempNoSTIM==1);
+                FAanglenoSTIM = sum(performanceAngleTempNoSTIM==2);
+                MISSanglenoSTIM = sum(performanceAngleTempNoSTIM==3);
+                CRanglenoSTIM = sum(performanceAngleTempNoSTIM==4);
+                basicProperties{i,1}.performanceNoSTIM{kk} =  (HITanglenoSTIM+CRanglenoSTIM)/(length(performanceAngleTempNoSTIM));
+                basicProperties{i,1}.probLickingNoSTIM{kk} =  (HITanglenoSTIM+FAanglenoSTIM)/(MISSanglenoSTIM+CRanglenoSTIM+HITanglenoSTIM+FAanglenoSTIM);
+            end
             
-            HITanglenoSTIM = sum(performanceAngleTempNoSTIM==1);
-            FAanglenoSTIM = sum(performanceAngleTempNoSTIM==2);
-            MISSanglenoSTIM = sum(performanceAngleTempNoSTIM==3);
-            CRanglenoSTIM = sum(performanceAngleTempNoSTIM==4);
-            basicProperties{i,1}.performanceNoSTIM{kk} =  (HITanglenoSTIM+CRanglenoSTIM)/(length(performanceAngleTempNoSTIM));
-            basicProperties{i,1}.probLickingNoSTIM{kk} =  (HITanglenoSTIM+FAanglenoSTIM)/(MISSanglenoSTIM+CRanglenoSTIM+HITanglenoSTIM+FAanglenoSTIM);
+        else
+            basicProperties{i,1}.performanceSTIM{kk} = nan;
+            basicProperties{i,1}.probLickingSTIM{kk} = nan;
+            basicProperties{i,1}.performanceNoSTIM{kk} = nan;
+            basicProperties{i,1}.probLickingNoSTIM{kk} = nan;
         end
         
     end
@@ -179,9 +198,10 @@ for i=1:length(DATA.allFiles);
     
     %Define session type
     tempsessionType = strcat('S',num2str(length(tempAngles)));
-    
+    basicProperties{i,1}.stimNumber = length(tempAngles);
     if autoSession==1
         tempsessionType = strcat(tempsessionType,'auto');
+        basicProperties{i,1}.stimNumber = 0;
     end
     
     basicProperties{i,1}.sessionType = tempsessionType;
@@ -218,7 +238,6 @@ for k = 1:length(unique_idx)
     end
 end
 %%
-
 figure;clf
 %figure('Visible','off');clf;
 tempTitle = DATA.mouseID;
@@ -268,33 +287,85 @@ for j = 1:length(numPoints);
     end
 end
 
+for j = 1:length(numPoints);
+    negReinforcer(j,1) = basicPropertiesToPlot{j,1}.negReinforcer;
+    waterSchedule(j,1) = basicPropertiesToPlot{j,1}.waterSchedule;
+    optogenetics(j,1) = basicPropertiesToPlot{j,1}.optogenetics;
+end
+
 ColorCodeColors = [1.0;0.9;0.8;0.6;0.4;0.2;0];
 
 for j = 1:length(numPoints);
-    plot(numPoints(j),colorCode(j,1),'o','MarkerSize', 10, 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
+    if waterSchedule(j)==1;
+        plot(numPoints(j),colorCode(j,1),'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0,0,waterSchedule(j)], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
+    elseif negReinforcer(j)==1;
+        plot(numPoints(j),colorCode(j,1),'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[negReinforcer(j),0,0], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
+    else
+        plot(numPoints(j),colorCode(j,1),'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0.4,ColorCodeColors(colorCode(j)),0.8], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
+    end
     hold on
+    if optogenetics(j)==1;
+        plot(numPoints(j),colorCode(j,1),'*y','MarkerSize', 5)
+    end
 end
-
-NumTicks = max(colorCode);
-L = get(gca,'YLim');
-set(gca,'YTick',linspace(L(1),L(2),NumTicks))
-set(gca,'YTickLabel',SessionTypes(1:max(colorCode)))
-%set(gca,'YTickLabel',{'S1Auto','S1', 'S2'})
+set(gca,'YTickLabel',SessionTypes)
 ylabel('Session Type');
 xlabel('Session Number');
 
 %plot performance
 subplot(noSubPlots,1,4)
+addtoLegend = 1;
+addedWater = 0;
+addedNeg = 0;
+addedOpto = 0;
 
-for j = 1:length(numPoints);
-    plot(numPoints(j),basicPropertiesToPlot{j,1}.sessionperformance,'or','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(j)),0.8],'Color', [0.4,ColorCodeColors(colorCode(j)),0.8])
+for jj = 1:length(numPoints);
+    
+    if waterSchedule(jj)==1;
+        circle1 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.sessionperformance,'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0,0,waterSchedule(jj)], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
+        hold on
+        if (addedWater==0)
+            legendAdd(addtoLegend,:) = circle1;
+            legendTab{addtoLegend} = 'water schedule';
+            addedWater=1;
+            addtoLegend=addtoLegend+1;
+        end
+    elseif negReinforcer(jj)==1;
+        circle2 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.sessionperformance,'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[negReinforcer(jj),0,0], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
+        hold on
+        if (addedNeg==0)
+            legendAdd(addtoLegend,:) = circle2;
+            legendTab{addtoLegend} = 'neg reinforcement';
+            addedNeg=1;
+            addtoLegend=addtoLegend+1;
+        end
+    else
+        plot(numPoints(jj),basicPropertiesToPlot{jj,1}.sessionperformance,'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0.4,ColorCodeColors(colorCode(jj)),0.8], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
+    end
     hold on
+    
+    if optogenetics(jj)==1;
+        circle3 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.sessionperformance,'*y','MarkerSize', 5);
+       hold on
+        if (addedOpto==0)
+            legendAdd(addtoLegend,:) = circle3;
+            legendTab{addtoLegend} = 'optogenetics';
+            addedOpto = 1;
+            addtoLegend=addtoLegend+1;
+        end
+    end
+    plot([0 max(numPoints)],[0.5 0.5],'k--')
+    ylim([0 1])
+    xlim([0 length(numPoints)])
+    ylabel('Performance');
+    xlabel('Session Number');
 end
 
-ylim([0 1])
-xlim([0 length(numPoints)])
-ylabel('Performance');
-xlabel('Session Number');
+if(length(legendAdd))>0
+    hLL = legend([legendAdd(1:length(legendAdd))], legendTab{:});
+    newPosition = [0 0 0.2 0.1];
+    set(hLL, 'Position', newPosition, 'Box', 'off')
+end
 
 baseFileName = strcat(tempTitle); %save old figure
 saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\basicSessionProperties',baseFileName),'jpeg');
@@ -302,71 +373,119 @@ saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\basi
 %plot sessionType performance to get an idea of how inclinded to lick the
 %mouse is
 
-plotTotal = 4;
+plotRows = 4;
+plotCols = 3;
+plotTally = (plotRows*plotCols);
 numFigs = 1;
 %figure('Visible','off');clf;
 figure;clf;
 set(gcf,'name',tempTitle,'numbertitle','off')
 currPlot = 1;
 
+addtoLegend = 1;
+addedWater = 0;
+addedNeg = 0;
+addedOpto = 0;
+
 for h = 1:length(numPoints)
     saved = 0;
     activeAngles = cell2mat(basicPropertiesToPlot{h,1}.performance);
     probLick = cell2mat(basicPropertiesToPlot{h,1}.probLicking);
-    plotAngles = possibleAngles;
+    plotAngles = possibleAngles-270;
     [~,c] = find(isnan(activeAngles));
     activeAngles(c) = [];
     plotAngles(c) = [];
     probLick(c) = [];
-    
     trialTypecombo = [basicPropertiesToPlot{h,1}.HIT basicPropertiesToPlot{h,1}.MISS;basicPropertiesToPlot{h,1}.FA basicPropertiesToPlot{h,1}.CR];
     
     if(length(activeAngles)>2) %if more than 2 angles were presented
-        subplot(plotTotal,3,currPlot);
+        subplot(plotRows,plotCols,currPlot);
         plot(plotAngles,activeAngles,'o-');
+        hold on
         currPlot=currPlot+1;
         xlabel('Angles');
         ylabel('Performance');
         ylim([0 1])
+        xlimit = xlim;
         
-        subplot(plotTotal,3,currPlot);
+        if(negReinforcer(h,1)==1)
+            squareLeg1 =  plot(xlimit(2),0.1,'rs','MarkerFaceColor','r', 'MarkerSize',8);
+            if (addedNeg==0)
+                legendAdd(addtoLegend,:) = squareLeg1;
+                legendTab{addtoLegend} = 'neg reinforcement';
+                addedNeg=1;
+                addtoLegend=addtoLegend+1;
+            end
+        end
+
+        if(waterSchedule(h,1)==1)
+            squareLeg2 = plot(xlimit(2),0.2,'gs','MarkerFaceColor','b', 'MarkerSize',8);
+            
+            if (addedOpto==0)
+                legendAdd(addtoLegend,:) = squareLeg2;
+                legendTab{addtoLegend} = 'water schedule';
+                addedOpto=1;
+                addtoLegend=addtoLegend+1;
+            end
+        end
+        
+        if(optogenetics(h,1)==1)
+            squareLeg3 = plot(xlimit(2),0.3,'bs','MarkerFaceColor','g', 'MarkerSize',8);
+            if (addedWater==0)
+                legendAdd(addtoLegend,:) = squareLeg3;
+                legendTab{addtoLegend} = 'optogenetics';
+                addedWater=1;
+                addtoLegend=addtoLegend+1;
+            end
+        end
+        
+        subplot(plotRows,plotCols,currPlot);
         plot(plotAngles,probLick,'o-');
         currPlot=currPlot+1;
         xlabel('Angles');
         ylabel('Licking Probability');
         ylim([0 1])
         
-        subplot(plotTotal,3,currPlot)
+        subplot(plotRows,plotCols,currPlot)
         bar(trialTypecombo, 'stacked');
         hold on
         XlableAxis = {'HIT/MISS'; 'FA/CR'};
         set(gca,'XTickLabel',XlableAxis);
         currPlot=currPlot+1;
         
-        if rem(currPlot,plotTotal)==1 %if the value is divisable by 4 - open a new plot
+        if rem(currPlot,plotTally)==1 %if the value is divisable by 4 - open a new plot
             baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
+            if(length(legendAdd))>0
+                hLL = legend([legendAdd(1:length(legendAdd))], legendTab{:});
+                newPosition = [0 0 0.2 0.1];
+                set(hLL, 'Position', newPosition, 'Box', 'off')
+                addtoLegend = 1;
+                addedWater = 0;
+                addedNeg = 0;
+                addedOpto = 0;
+               clear legendTab legendAdd;
+                
+            end
             saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
             saved = 1;
             figure;clf;
             numFigs = numFigs+1;
             currPlot = 1;
         end
-        
     end
     
     if saved==0
-        
-        baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
-        saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
-        
+        if currPlot>1
+            baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
+            saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
+        end
     end
-    
-    
-    
 end
 
 
-plotTotal = 4;
+plotRows = 4;
+plotCols = 2;
+plotTally = (plotRows*plotCols);
 numFigs = 1;
 %figure('Visible','off');clf;
 figure;clf;
@@ -376,43 +495,58 @@ currPlot = 1;
 for h = 1:length(numPoints)
     
     if (basicPropertiesToPlot{h,1}.optogenetics)
+        activeAnglesSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceSTIM);
+        activeAnglesnoSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceNoSTIM);
+        probLickSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingSTIM);
+        probLickNoSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingNoSTIM);
+        plotAngles = possibleAngles;
+        [~,c] = find(isnan(activeAnglesSTIM));
+        activeAnglesSTIM(c) = [];
+        activeAnglesnoSTIM(c) = [];
+        plotAngles(c) = [];
+        probLickSTIM(c) = [];
+        probLickNoSTIM(c) = [];
         
-    activeAnglesSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceSTIM);
-    activeAnglesnoSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceNoSTIM);
-    probLickSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingSTIM);
-    probLickNoSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingNoSTIM);
-    plotAngles = possibleAngles;
-    [~,c] = find(isnan(activeAnglesSTIM));
-    activeAnglesSTIM(c) = [];
-    activeAnglesnoSTIM(c) = [];
-    plotAngles(c) = [];
-    probLickSTIM(c) = [];
-    probLickNoSTIM(c) = [];
-
-  subplot(plotTotal,2,currPlot);
-        plot(plotAngles,activeAnglesSTIM,'o-r');
+        subplot(plotRows,plotCols,currPlot);
+        line1 = plot(plotAngles,activeAnglesSTIM,'o-r');
         hold on;
-         plot(plotAngles,activeAnglesnoSTIM,'o-k');
+        line2 = plot(plotAngles,activeAnglesnoSTIM,'o-k');
         currPlot=currPlot+1;
         xlabel('Angles');
         ylabel('Performance');
         ylim([0 1])
         
-        subplot(plotTotal,2,currPlot);
+        subplot(plotRows,plotCols,currPlot);
         plot(plotAngles,probLickSTIM,'o-r');
         hold on;
-          plot(plotAngles,probLickNoSTIM,'o-k');
+        plot(plotAngles,probLickNoSTIM,'o-k');
         currPlot=currPlot+1;
         xlabel('Angles');
         ylabel('Licking Probability');
         ylim([0 1])
-        
     end
-    
-            baseFileName = strcat(tempTitle); %save old figure
+
+    if (currPlot>1)
+     if rem(currPlot,plotTally)==1 %if the value is divisable by 4 - open a new plot
+            baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
+         hL = legend([line1, line2],{'Stimulated', 'Control'});
+newPosition = [0 0 0.2 0.1];
+set(hL, 'Position', newPosition, 'Box', 'off')
+
         saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\optogenetics',baseFileName),'jpeg');
-    
+            saved = 1;
+            figure;clf;
+            numFigs = numFigs+1;
+            currPlot = 1;
+     end
+    end
 end
 
-        
+% figure;clf;
+% for jj = 1:length(numPoints);
+%     plot(basicPropertiesToPlot{jj,1}.stimNumber,basicPropertiesToPlot{jj,1}.sessionperformance,'*','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8])
+%     hold on
+% end
+
+
 end
