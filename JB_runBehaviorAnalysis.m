@@ -11,10 +11,14 @@ for h = 1:length(folders)
     tempMousedataDir = char(strcat(currDirectory,'\',folders(h).name));
     cd(tempMousedataDir);
     
-    JB_loadTxtFileTEST;
+    [newTxtFileCount] = JB_loadTxtFile;
+    
+    if newTxtFileCount>0
     
     JB_basicBehaviorProperties;
      
+    end
+    
 currDirectory;
 end
 
