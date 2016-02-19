@@ -1,4 +1,10 @@
-function [] = JB_basicBehaviorProperties(currDirectory)
+function [] = JB_basicBehaviorProperties(plotfig)
+
+
+if nargin==1;
+    plotON = plotfig;
+end
+
 
 load('DATA.mat')
 sessionType = 1;
@@ -238,8 +244,13 @@ for k = 1:length(unique_idx)
     end
 end
 %%
+
+if (plotON==1)
 figure;clf
-%figure('Visible','off');clf;
+else 
+figure('Visible','off');clf;
+end
+
 tempTitle = DATA.mouseID;
 tempTitle(findstr(tempTitle,'_'))=[];
 set(gcf,'name',tempTitle,'numbertitle','off');
@@ -319,6 +330,8 @@ addedWater = 0;
 addedNeg = 0;
 addedOpto = 0;
 
+legendAdd = [];
+legendTab = [];
 for jj = 1:length(numPoints);
     
     if waterSchedule(jj)==1;
@@ -377,8 +390,13 @@ plotRows = 4;
 plotCols = 3;
 plotTally = (plotRows*plotCols);
 numFigs = 1;
-%figure('Visible','off');clf;
-figure;clf;
+
+if (plotON==1)
+figure;clf
+else 
+figure('Visible','off');clf;
+end
+
 set(gcf,'name',tempTitle,'numbertitle','off')
 currPlot = 1;
 
@@ -468,7 +486,11 @@ for h = 1:length(numPoints)
             end
             saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
             saved = 1;
-            figure;clf;
+            if (plotON==1)
+figure;clf
+else 
+figure('Visible','off');clf;
+            end
             numFigs = numFigs+1;
             currPlot = 1;
         end
@@ -487,8 +509,13 @@ plotRows = 4;
 plotCols = 2;
 plotTally = (plotRows*plotCols);
 numFigs = 1;
-%figure('Visible','off');clf;
-figure;clf;
+
+if (plotON==1)
+figure;clf
+else 
+figure('Visible','off');clf;
+end
+
 set(gcf,'name',tempTitle,'numbertitle','off')
 currPlot = 1;
 
@@ -535,7 +562,11 @@ set(hL, 'Position', newPosition, 'Box', 'off')
 
         saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\optogenetics',baseFileName),'jpeg');
             saved = 1;
-            figure;clf;
+            if (plotON==1)
+figure;clf
+else 
+figure('Visible','off');clf;
+            end
             numFigs = numFigs+1;
             currPlot = 1;
      end
