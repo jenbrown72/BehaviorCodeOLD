@@ -1,24 +1,42 @@
-function [data] = JB_sessionAnalysis(filename,PreStim,PostStim)
+function [data] = JB_sessionAnalysisV2(mousefileID)
 
-%
-% switch nargin
-%     case 2
-%         PreStim = PreStim;
-%     case 3
-%        PreStim = PreStim;
-% PostStim = PostStim;
-%
-%     otherwise
-%         PreStim = 1000;
-% PostStim = 1000;
-% end
+%% matlab GUI
+% select: varToPlot = {'AlignedDATAallDATA'};
+% analysis window
+%if need to break down the data - select time points
+% plot of not to plot
+% which grap[hs to display
 
-% filename = 'JB014_L71_2015_10_15_14_3.mat';
-% data.raw = load(filename);
-% tempDATA = struct2cell(data.raw);
+
 load('DATA.mat')
-tempDATA = DATA.allFiles{1,22}.rawData;
-% tempDATA = cell2mat(tempDATA);
+
+if nargin==1
+    filename = mousefileID;
+    
+    %find out if a float of string was inputted
+    if isfloat(filename);
+        filenameIdx = filename;
+    else
+        for i=1:length(DATA.allFiles);
+            if(strcmp(DATA.allFiles{1,i}.name, filename));
+                filenameIdx = i;
+            end
+        end
+    end
+    
+else
+    prompt = 'What session do you want to analyse?';
+    answer = inputdlg(prompt);
+    for i=1:length(DATA.allFiles);
+        if(strcmp(DATA.allFiles{1,i}.name, char(answer)));
+            filenameIdx = i;
+        end
+    end
+end
+
+%create a tempDATA file for this session
+tempDATA = DATA.allFiles{1,17}.rawData;
+%tempDATA = DATA.allFiles{1,filenameIdx}.rawData;
 
 midPoint = 270; %midpoint angle
 
@@ -39,7 +57,7 @@ TrialType = 13;
 loopTime = 14;
 encoder = 15;
 
-figure(1);clf; % Plot encoder position - number of steps from home position. 
+figure(1);clf; % Plot encoder position - number of steps from home position.
 subplot(3,1,1);
 plot(tempDATA(:,encoder0Pos));
 hold on
@@ -49,43 +67,33 @@ hold on
 
 threshold = 50000;
 aboveThreshold = find(tempDATA(:,encoder0Pos)>threshold);
-
 if ~isempty(aboveThreshold)
     plot(aboveThreshold(:,1),threshold,'*r');
 end
-
 display('Thresholding and cleaning up data')
 
 for i = 1:length(aboveThreshold)
     tempDATA(aboveThreshold(i),:)=nan;
 end
-
 tempDATA = tempDATA(~any(isnan(tempDATA),2),:);
 
 %Delete any blips in the recordings - missaligned txt input - find these by
 %searching for non binary values in the columns where these are expected
-    
-    [ind, ~] = find(tempDATA(:,[targetArea,rewarded,licks,LEDstate,autoReward])>1); %all these inputs should be binary
-    if ~isempty(ind) %if there was a blip, delete this row
-        
-        UniqInd = unique(ind);
-        
-        for n=1:length(UniqInd);
-            
-            tempDATA(UniqInd(n),:)=nan;
 
-        end
-        
-        tempDATA = tempDATA(~any(isnan(tempDATA),2),:);
-        
-        
+[ind, ~] = find(tempDATA(:,[targetArea,rewarded,licks,LEDstate,autoReward])>1); %all these inputs should be binary
+if ~isempty(ind) %if there was a blip, delete this row
+    UniqInd = unique(ind);
+    for n=1:length(UniqInd);
+        tempDATA(UniqInd(n),:)=nan;
     end
-    
-    % Delete any blips where the clock went backwards  
+    tempDATA = tempDATA(~any(isnan(tempDATA),2),:);
+end
+
+% Delete any blips where the clock went backwards
 negTime = find(diff(tempDATA(:,millis))<0);
 
 for i = 1:length(negTime)
-    tempDATA(negTime(i),:)=nan;
+    tempDATA(negTime(i)+1,:)=nan;
 end
 
 tempDATA = tempDATA(~any(isnan(tempDATA),2),:);
@@ -101,8 +109,6 @@ hold on
 plot(tempDATA(:,rewarded)*2000,'.-g'); % plot water reward
 hold on
 plot(tempDATA(:,licks)*2000,'.-m'); % plot licks
-
-
 %% Divide up data into single revolutions/trials
 
 revolutionsDATA = find((diff(tempDATA(:,encoder0Pos)))<-100); % find where encoder is reset back to 0 to mark the end of a trial/start of enw trial
@@ -117,42 +123,20 @@ p=1;
 
 for j = 1:length(data.trial);
     [targetStart,~] = find((data.trial{j,1}.raw(:,targetArea)>0)); % did the target enter the target region - should do on all trials, if not - delete
-    
     if isempty(targetStart) || targetStart(1)==1;
         toDelete(p) = j;
         p=p+1;
     end
-    
 end
 
 if ~isempty(toDelete)
-    
     data.trial(toDelete)=[];
 end
-
-
-% %clear toDelete;
-% toDelete = [];
-% 
-% %Delete any auto training sessions - i.e. no requirement for lick.
-% p=1;
-% for j = 1:length(data.trial);
-%     
-%     if data.trial{j}.raw(1,8)==1 %This was a training session - autoreward - chuck out of analysis
-%         toDelete(p) = j;
-%         p=p+1;  
-%     end
-% end
-% 
-% if ~isempty(toDelete)  
-%     data.trial(toDelete)=[];  
-% end
 
 % If stimulus position is define in terms of step number (older data -
 % column 11) - then turn this into angle..
 
 for j = 1:length(data.trial);
-    
     if data.trial{j}.raw(1,angle)==3200 %This was a training session - autoreward - chuck out of analysis
         data.trial{j}.raw(:,angle) = 270;
         display('Changed')
@@ -175,85 +159,34 @@ for j = 1:length(data.trial);
         data.trial{j}.raw(:,angle) = 225;
         display('Changed')
     end
-    
     if data.trial{j}.raw(1,angle)==293
         data.trial{j}.raw(:,angle) = 292;
         display('Changed')
     end
-    
 end
 
-% Make sure Go stimulus is consistent orientation across sessions (I
-% changed the orientation of the stim bar on 5-24-15. New = angle <270 =
-% HIT.
-
-% testVal = data.trial.raw.(filename(1:end-4))((find(data.raw.(filename(1:end-4))(:,13)==1,1)),11); %Find first angles of a HIT trial
-% 
-% if (testVal>270); % these need to be switched - replected.
-%     
-%     for j = 1:length(data.trial);
-%         
-%         
-%         if data.trial{j}.raw(1,11)>270;
-%             
-%             toSubtract = data.trial{j}.raw(1,11)-270;
-%             
-%             data.trial{j}.raw(:,11) = 270-toSubtract;
-%             
-%         elseif data.trial{j}.raw(1,11)<270;
-%             
-%             toAdd = 270-data.trial{j}.raw(1,11);
-%             
-%             data.trial{j}.raw(:,11) = 270+toAdd;
-%             
-%         end
-%         
-%     end
-%     
-% end
-
-
 % %% If mouse did not lick for X amount of trials - chuck out data
-%
 % counter=0;
 % p+1;
-%
-% for i=1: length(data.trial);
-%
-%     % Check to see if there were any licks during the trial
-%
+% for i=1: length(data.trial); % Check to see if there were any licks during the trial
 %     if(any(data.trial{i}.raw(:,4)==1))
 %         nolickcounter(i)=0;
 %         counter=0;
 %         continue
-%
 %     else
 %         counter = counter+1;
 %      nolickcounter(i) = counter;
 %        toDelete(p) = i;
 %         p=p+1;
 %     end
-%
-%
 % end
 %
 % threshold=20;
 % toDelete = [];
-%
 % IdxtoDelete = find((nolickcounter>threshold),1,'first');
-%
-%
-% %%
-%
 % if ~isempty(toDelete)
-%
 %     data.trial(toDelete)=[];
-%
 % end
-%
-%
-%
-
 %% Define Target Time, Position, Correct (Hit, correct Rejection) or Incorrect (Miss, or False Alarm) data.trial
 
 sampleRateSpacing = 2;
@@ -278,12 +211,14 @@ data.SessionPerformance.midPointLickCountNoStim = 0;
 data.SessionPerformance.midPointNoLickCountStim = 0;
 data.SessionPerformance.midPointNoLickCountNoStim = 0;
 
-for j = 1: length(data.trial);
+for j = 1: length(data.trial); %now go through and extract data from each trial
+    
+    data.trial{j,1}.Performance.count = data.trial{j,1}.raw(1,count);
     
     % make sample times uniform and zeroed
     SampleTimes = data.trial{j,1}.raw(:,millis)-data.trial{j,1}.raw(1,millis);
     maxT = max(SampleTimes);
-    [~, numDATA] = size(data.trial{j,1}.raw); % find length fo txtdata columns
+    [~, numDATA] = size(data.trial{j,1}.raw); % find length of txtdata columns
     filteredSampleTimes = 0:sampleRateSpacing:maxT; %10msec spacing
     clear tempFiltered;
     
@@ -305,7 +240,7 @@ for j = 1: length(data.trial);
     
     [targetStart,~] = find((data.trial{j,1}.filteredDATA(:,targetArea)>0)); % Identify when stim entered TargetArea
     rewardStart = find((data.trial{j,1}.filteredDATA(:,rewarded)==1)); % Identify RewardTime if Hit data.trial
-
+    
     % If Reward was given, update information on record properties
     if ~isempty(rewardStart); %
         data.trial{j,1}.Stimulus.RewardIdx = rewardStart(1);
@@ -313,45 +248,26 @@ for j = 1: length(data.trial);
         data.trial{j,1}.Stimulus.RewardIdx = nan;
     end
     
-%     %Gather information about stimulus presentation
-%     data.trial{j,1}.Stimulus.TargetMin = data.trial{j,1}.filteredDATA(targetStart(1),1); % stim entered TargetArea Step
-%     data.trial{j,1}.Stimulus.TargetMinIdx = targetStart(1); % stim entered TargetArea Idx
-%     data.trial{j,1}.Stimulus.TargetMinTime = data.trial{j,1}.timeStamps(targetStart(1),1);% stim entered TargetArea time
-%     
-%     data.trial{j,1}.Stimulus.TargetMax = data.trial{j,1}.filteredDATA(targetStart(1),end); % timeout TargetArea Step
-%     data.trial{j,1}.Stimulus.TargetMaxIdx = targetStart(end); % timeout TargetArea Idx
-%     data.trial{j,1}.Stimulus.TargetMaxTime = data.trial{j,1}.timeStamps(targetStart(1),end);% timeout TargetArea time
-%     
     %Gather information about Answer Period
- 
     data.trial{j,1}.Stimulus.AnswerPeriodStartIdx = targetStart(1);
-     data.trial{j,1}.Stimulus.AnswerPeriodEndIdx = targetStart(end);
-        data.trial{j,1}.Stimulus.AnswerPeriodDuration = data.trial{j,1}.filteredDATA(targetStart(end),7)-data.trial{j,1}.filteredDATA(targetStart(1),millis);
-        
-        %Gather informatino on puff time
-         [puffStart,~] = find((data.trial{j,1}.filteredDATA(:,givePuff )>0));
-         
-            if ~isempty(puffStart); %
+    data.trial{j,1}.Stimulus.AnswerPeriodEndIdx = targetStart(end);
+    data.trial{j,1}.Stimulus.AnswerPeriodDuration = data.trial{j,1}.filteredDATA(targetStart(end),7)-data.trial{j,1}.filteredDATA(targetStart(1),millis);
+    
+    %Gather informatino on puff time
+    [puffStart,~] = find((data.trial{j,1}.filteredDATA(:,givePuff )>0));
+    if ~isempty(puffStart); %
         data.trial{j,1}.Stimulus.puffStart = puffStart(1);
     else
         data.trial{j,1}.Stimulus.puffStart = nan;
-            end
-            
-%     data.trial{j,1}.Stimulus.AnswerPeriodStartTime = data.trial{j,1}.timeStamps(targetStart(1));
-   
-  %  data.trial{j,1}.Stimulus.AnswerPeriodEndTime = data.trial{j,1}.timeStamps(targetStart(end));
-    
-    % Determine if animal licked during Answer Period
+    end
     
     %Look at time of first lick for all stim and all trial types cover both
     %the answer period and 1 second after this
     
     SampleLickTime = 2000/sampleRateSpacing;  % = 2seconds
-    
     EndTime = data.trial{j,1}.Stimulus.AnswerPeriodStartIdx+SampleLickTime;
-    
     if EndTime>length(data.trial{j,1}.filteredDATA)
-        EndTime = length(data.trial{j,1}.filteredDATA);   
+        EndTime = length(data.trial{j,1}.filteredDATA);
     end
     
     % get lick times around the 2 seconds after answer period started
@@ -363,21 +279,17 @@ for j = 1: length(data.trial);
     if isempty(data.trial{j,1}.Performance.LickTime)
         data.trial{j,1}.Performance.LickTime=nan;
     end
-
-    %if reward port opened find licks before this happened
     
+    %if reward port opened find licks before this happened
     if ~isnan(data.trial{j,1}.Stimulus.RewardIdx) %If there was a reward given
-        
         data.trial{j,1}.Performance.LickFrequency = sum(data.trial{j,1}.filteredDATA(data.trial{j,1}.Stimulus.AnswerPeriodStartIdx:data.trial{j,1}.Stimulus.RewardIdx,licks)==1)/(data.trial{j,1}.Stimulus.AnswerPeriodDuration/1000);
         tempFirstLickIdx = (data.trial{j,1}.Stimulus.AnswerPeriodStartIdx+(find((data.trial{j,1}.filteredDATA(data.trial{j,1}.Stimulus.AnswerPeriodStartIdx:data.trial{j,1}.Stimulus.RewardIdx,licks)==1),1)));
         tempLickLatency = data.trial{j,1}.timeStamps(tempFirstLickIdx)-data.trial{j,1}.timeStamps(data.trial{j,1}.Stimulus.AnswerPeriodStartIdx);
-        
         if ~isempty(tempLickLatency)
             data.trial{j,1}.Performance.FirstLickLatency = tempLickLatency;
         else
-            data.trial{j,1}.Performance.FirstLickLatency = nan;     
+            data.trial{j,1}.Performance.FirstLickLatency = nan;
         end
-        
     else
         
         if length(data.trial{j,1}.filteredDATA)>data.trial{j,1}.Stimulus.AnswerPeriodEndIdx;%if reward port didn't open find out if any licks occured during whloe answer period
@@ -389,127 +301,83 @@ for j = 1: length(data.trial);
         data.trial{j,1}.Performance.LickFrequency = sum(data.trial{j,1}.filteredDATA(data.trial{j,1}.Stimulus.AnswerPeriodStartIdx:maxTimeIdx,licks)==1)/(data.trial{j,1}.Stimulus.AnswerPeriodDuration/1000);
         tempFirstLickIdx = (data.trial{j,1}.Stimulus.AnswerPeriodStartIdx+(find((data.trial{j,1}.filteredDATA(data.trial{j,1}.Stimulus.AnswerPeriodStartIdx:maxTimeIdx,licks)==1),1)));
         tempLickLatency = data.trial{j,1}.timeStamps(tempFirstLickIdx)-data.trial{j,1}.timeStamps(data.trial{j,1}.Stimulus.AnswerPeriodStartIdx);
-        
         if ~isempty(tempLickLatency)
             data.trial{j,1}.Performance.FirstLickLatency = tempLickLatency;
         else
-            
             data.trial{j,1}.Performance.FirstLickLatency = nan;
-            
         end
-        
     end
     
     if any(data.trial{j,1}.raw(:,LEDstate),1);
-        
         data.trial{j,1}.Performance.StimTrial = 1;
-        
     else
         data.trial{j,1}.Performance.StimTrial = 0;
     end
     
-    
-    
     % Update Trial Type Results
     if data.trial{j,1}.Performance.LickFrequency>0; % If there was licking..
-        
         if (data.trial{j,1}.Performance.StimType < midPoint); % If this was the go stimulus - Hit trial
             data.SessionPerformance.HitCount = data.SessionPerformance.HitCount+1;
             data.trial{j,1}.Performance.OutcomeLick = 1; % Anticipatory lick - Hit trial
             data.trial{j,1}.Performance.OutcomeCode = 1;
-            
             if any(data.trial{j,1}.raw(:,LEDstate),1); %Photostimulation Trial - test to see if column contains a 1 =  i.e. stim on
                 data.SessionPerformance.HitCountStim = data.SessionPerformance.HitCountStim+1;
             else %No stimulation Trial
                 data.SessionPerformance.HitCountNoStim = data.SessionPerformance.HitCountNoStim+1;
             end
-
         elseif (data.trial{j,1}.Performance.StimType > midPoint) % If this was a distractor stimulus
-            
             data.SessionPerformance.FalseAlarmCount = data.SessionPerformance.FalseAlarmCount+1;
             data.trial{j,1}.Performance.OutcomeLick = 1;% False Alarm - incorrect lick
             data.trial{j,1}.Performance.OutcomeCode = 2;
-            
-            
             if any(data.trial{j,1}.raw(:,LEDstate),1); %Photostimulation Trial
                 data.SessionPerformance.FalseAlarmCountStim = data.SessionPerformance.FalseAlarmCountStim+1;
             else %No stimulation Trial
                 data.SessionPerformance.FalseAlarmCountNoStim = data.SessionPerformance.FalseAlarmCountNoStim+1;
-            end  
-            
+            end
         elseif (data.trial{j,1}.Performance.StimType == midPoint) % If this was exactly in the middle
-            
             data.SessionPerformance.midPointLickCount = data.SessionPerformance.midPointLickCount+1;
             data.trial{j,1}.Performance.OutcomeLick = 1;% licked for 50% verticle
             data.trial{j,1}.Performance.OutcomeCode = 5; % 5 if licked, 6 if didn't
-            
             if any(data.trial{j,1}.raw(:,LEDstate),1); %Photostimulation Trial
                 data.SessionPerformance.midPointLickCountStim = data.SessionPerformance.midPointLickCountStim+1;
             else %No stimulation Trial
                 data.SessionPerformance.midPointLickCountNoStim = data.SessionPerformance.midPointLickCountNoStim+1;
-                
             end
-            
         end
-        
-        
     else
-        
         if (data.trial{j,1}.Performance.StimType < midPoint); % If this was the no go stimulus
-            
             data.SessionPerformance.MissCount = data.SessionPerformance.MissCount+1;
             data.trial{j,1}.Performance.OutcomeLick = 0;  % No anticipatory lick - Miss trial
             data.trial{j,1}.Performance.OutcomeCode = 3;
-            
             if any(data.trial{j,1}.raw(:,LEDstate),1); %Photostimulation Trial
                 data.SessionPerformance.MissCountStim = data.SessionPerformance.MissCountStim+1;
             else %No stimulation Trial
                 data.SessionPerformance.MissCountNoStim = data.SessionPerformance.MissCountNoStim+1;
-                
             end
-            
-            
         elseif (data.trial{j,1}.Performance.StimType > midPoint) % If this was a distractor stimulus
-            
             data.SessionPerformance.CorrectRejectionCount = data.SessionPerformance.CorrectRejectionCount+1;
             data.trial{j,1}.Performance.OutcomeLick = 0; % Correctly withheld lick
             data.trial{j,1}.Performance.OutcomeCode = 4;
-            
             if any(data.trial{j,1}.raw(:,LEDstate),1); %Photostimulation Trial
                 data.SessionPerformance.CorrectRejectionCountStim = data.SessionPerformance.CorrectRejectionCountStim+1;
             else %No stimulation Trial
                 data.SessionPerformance.CorrectRejectionCountNoStim = data.SessionPerformance.CorrectRejectionCountNoStim+1;
-                
             end
-            
-            
         elseif (data.trial{j,1}.Performance.StimType == midPoint) % If this was exactly in the middle
-            
             data.SessionPerformance.midPointNoLickCount = data.SessionPerformance.midPointNoLickCount+1;
             data.trial{j,1}.Performance.OutcomeLick = 0;% licked for 50% verticle
             data.trial{j,1}.Performance.OutcomeCode = 6; % 5 if licked, 6 if didn't
-            
             if any(data.trial{j,1}.raw(:,LEDstate),1); %Photostimulation Trial
                 data.SessionPerformance.midPointNoLickCountStim = data.SessionPerformance.midPointNoLickCountStim+1;
             else %No stimulation Trial
                 data.SessionPerformance.midPointNoLickCountNoStim = data.SessionPerformance.midPointNoLickCountNoStim+1;
-                
             end
-            
-            
         end
-        
     end
-    
-    
     data.SessionPerformance.CumulativePerformance(j,1) = ((data.SessionPerformance.HitCount+data.SessionPerformance.CorrectRejectionCount)/j);
-    
-    
 end
 
-
 disp('________________Performance Lick Criteria_________________________');
-
 disp(['HitCount ' num2str(data.SessionPerformance.HitCount)]);
 disp(['MissCount ' num2str(data.SessionPerformance.MissCount)]);
 disp(['CorrectRejectionCount ' num2str(data.SessionPerformance.CorrectRejectionCount)]);
@@ -518,50 +386,38 @@ disp(['midPointLickCount ' num2str(data.SessionPerformance.midPointLickCount)]);
 disp(['midPointNoLickCount ' num2str(data.SessionPerformance.midPointNoLickCount)]);
 
 if (data.SessionPerformance.HitCountStim+data.SessionPerformance.MissCountStim) % optogenetic sesison
-    
     data.SessionPerformance.optogenetics = 1;
-    
 else
-    
     data.SessionPerformance.optogenetics = 0;
-    
 end
 
 if data.SessionPerformance.HitCountStim>0
     disp('________________Performance Stimulation_________________________');
-    
     disp(['HitCountStim ' num2str(data.SessionPerformance.HitCountStim)]);
     disp(['HitCountNoStim ' num2str(data.SessionPerformance.HitCountNoStim)]);
-    
     disp(['MissCountStim ' num2str(data.SessionPerformance.MissCountStim)]);
     disp(['MissCountNoStim ' num2str(data.SessionPerformance.MissCountNoStim)]);
-    
     disp(['CorrectRejectionCountStim ' num2str(data.SessionPerformance.CorrectRejectionCountStim)]);
     disp(['CorrectRejectionCountNoStim ' num2str(data.SessionPerformance.CorrectRejectionCountNoStim)]);
-    
     disp(['FalseAlarmCountStim ' num2str(data.SessionPerformance.FalseAlarmCountStim)]);
     disp(['FalseAlarmCountNoStim ' num2str(data.SessionPerformance.FalseAlarmCountNoStim)]);
-    
     disp(['midPointLickCountStim ' num2str(data.SessionPerformance.midPointLickCountStim)]);
     disp(['midPointLickCountNoStim ' num2str(data.SessionPerformance.midPointLickCountNoStim)]);
-    
     disp(['midPointNoLickCountStim ' num2str(data.SessionPerformance.midPointNoLickCountStim)]);
     disp(['midPointNoLickCountNoStim ' num2str(data.SessionPerformance.midPointNoLickCountNoStim)]);
-    
 end
 
 data.SessionPerformance.totalSessions = sum(data.SessionPerformance.HitCount+ data.SessionPerformance.MissCount+data.SessionPerformance.CorrectRejectionCount+data.SessionPerformance.FalseAlarmCount);
-
 data.CumulativePerformance(1:length(data.trial),1:5)=nan;
 
 for j=1:length(data.trial);
-    
     data.CumulativePerformance(j,1) = data.trial{j,1}.Performance.StimType;
     data.CumulativePerformance(j,2) = data.trial{j,1}.Performance.OutcomeLick;
     data.CumulativePerformance(j,3) = data.trial{j,1}.Performance.LickFrequency;
     data.CumulativePerformance(j,4) = data.trial{j,1}.Performance.FirstLickLatency;
     data.CumulativePerformance(j,5) = data.trial{j,1}.Performance.OutcomeCode;
     data.CumulativePerformance(j,6) = data.trial{j,1}.Performance.StimTrial;
+    data.CumulativePerformance(j,7) = data.trial{j,1}.Performance.count;
 end
 
 % For all stim - find running tally for each orietnation
@@ -581,102 +437,71 @@ data.SessionPerformance.lickTimeALL = nan(100,length(data.SessionPerformance.ori
 data.SessionPerformance.lickTimeALLStim = nan(100,length(data.SessionPerformance.orientations));
 data.SessionPerformance.lickTimeALLNoStim = nan(100,length(data.SessionPerformance.orientations));
 data.SessionPerformance.lickTimeALLAngle = nan(100,length(data.SessionPerformance.orientations));
-
 data.SessionPerformance.lickCountALL = nan(6,length(data.SessionPerformance.orientations));
 
-
 for k = 1:length(C)
-    
     tally = 1;
     tallyStim=1;
     tallyNoStim=1;
-    
     emptyTally = 1;
     emptyTallyStim=1;
     emptyTallyNoStim=1;
     
-    
     for j=1:length(data.trial); % Go Stimulus
-        
         if data.trial{j,1}.Performance.StimType==C(k)
-            
             data.SessionPerformance.lickTimeALLAngle(tally,k) = C(k);
             data.SessionPerformance.lickTimeALL(tally,k) = data.trial{j,1}.Performance.LickTime;
-            
             tally = tally+1;
-            
             if isnan(data.trial{j,1}.Performance.LickTime)
-                emptyTally = emptyTally+1;
-                
+                emptyTally = emptyTally+1; 
             end
-            
-            
             if data.trial{j,1}.Performance.StimTrial==1; %Stimulated
-                
                 data.SessionPerformance.lickTimeALLStim(tallyStim, k) = data.trial{j,1}.Performance.LickTime;
                 tallyStim=tallyStim+1;
-                
                 if isnan(data.trial{j,1}.Performance.LickTime)
-                    emptyTallyStim = emptyTallyStim+1;
-                    
+                    emptyTallyStim = emptyTallyStim+1;  
                 end
-                
             else
-                
                 data.SessionPerformance.lickTimeALLNoStim(tallyNoStim, k) = data.trial{j,1}.Performance.LickTime;
                 tallyNoStim=tallyNoStim+1;
-                
                 if isnan(data.trial{j,1}.Performance.LickTime)
                     emptyTallyNoStim = emptyTallyNoStim+1;
-                    
                 end
-                
             end
-            
         end
-        
     end
     
     data.SessionPerformance.lickCountALL(1,k) = tally;
     data.SessionPerformance.lickCountALL(2,k) = emptyTally;
-    
     data.SessionPerformance.lickCountALL(3,k) = tallyStim;
     data.SessionPerformance.lickCountALL(4,k) = emptyTallyStim;
-    
     data.SessionPerformance.lickCountALL(5,k) = tallyNoStim;
     data.SessionPerformance.lickCountALL(6,k) = emptyTallyNoStim;
-    
      data.SessionPerformance.lickCountALLNorm(1,k) = emptyTally/tally;
      data.SessionPerformance.lickCountALLNorm(2,k) = emptyTallyStim/tallyStim;
      data.SessionPerformance.lickCountALLNorm(3,k) = emptyTallyNoStim/tallyNoStim;
-    
-    
 end
-
-figure(31);clf
-plot(data.SessionPerformance.lickCountALLNorm(1,:),'k')
-hold on
-plot(data.SessionPerformance.lickCountALLNorm(2,:),'b')
-hold on
-plot(data.SessionPerformance.lickCountALLNorm(3,:),'r')
-hold on
-
-fontSize = 16; %font Size for plotting
-
-set(gca,'FontSize',16);
-
-set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
-set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
-set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
-title('Normalised of lick verses no lick trials', 'FontSize', fontSize,'fontWeight','bold');
-xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
-ylabel('Count', 'FontSize', fontSize,'fontWeight','bold');
+% 
+% figure(31);clf
+% plot(data.SessionPerformance.lickCountALLNorm(1,:),'k')
+% hold on
+% plot(data.SessionPerformance.lickCountALLNorm(2,:),'b')
+% hold on
+% plot(data.SessionPerformance.lickCountALLNorm(3,:),'r')
+% hold on
+% 
+% fontSize = 16; %font Size for plotting
+% set(gca,'FontSize',16);
+% set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
+% set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
+% set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
+% title('Normalised of lick verses no lick trials', 'FontSize', fontSize,'fontWeight','bold');
+% xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
+% ylabel('Count', 'FontSize', fontSize,'fontWeight','bold');
 
 
 for k = 1:length(C) % create empty field for stim
-    
     if C(k)<midPoint;
-        
         lickfieldname = ['Go_licked' int2str(C(k))];
         data.SessionPerformance.(lickfieldname) = [];
         noLickfieldname = ['Go_noLick' int2str(C(k))];
@@ -700,7 +525,6 @@ for k = 1:length(C) % create empty field for stim
         noLickNoStim=0;
         LickNoStim=0;
         
-        
         data.SessionPerformance.correctTrial{k,1} = lickfieldname;
         data.SessionPerformance.incorrectTrial{k,1} = noLickfieldname;
         
@@ -711,46 +535,29 @@ for k = 1:length(C) % create empty field for stim
         %Create arrays for GO without Stimulation
         data.SessionPerformance.correctTrialNoStim{k,1} = lickfieldnameNoStim;
         data.SessionPerformance.incorrectTrialNoStim{k,1} = noLickfieldnameNoStim;
-        
-        
+
         for j=1:length(data.trial); % Go Stimulus
-            
             if data.trial{j,1}.Performance.StimType==C(k) && data.trial{j,1}.Performance.OutcomeLick==0;  %no lick
-                
                 noLick = noLick+1;
-                
                 if data.trial{j,1}.Performance.StimTrial==1; %Stimulated
                     noLickStim = noLickStim+1;
-                    
                 else % Not Stimulated
                     noLickNoStim = noLickNoStim+1;
                 end
-                
-                
-                
             elseif data.trial{j,1}.Performance.StimType==C(k) && data.trial{j,1}.Performance.OutcomeLick==1;
-                
                 data.SessionPerformance.licklatencyAngle(Lick+1,k) = C(k);
                 data.SessionPerformance.licklatency(Lick+1,k) = data.trial{j,1}.Performance.FirstLickLatency;
-                
                 Lick = Lick+1;
-                
                 if data.trial{j,1}.Performance.StimTrial==1; %Stimulated
                     LickStim = LickStim+1;
-                    data.SessionPerformance.licklatencyStim(LickStim+1,k) = data.trial{j,1}.Performance.FirstLickLatency;
-                    
-                    
+                    data.SessionPerformance.licklatencyStim(LickStim+1,k) = data.trial{j,1}.Performance.FirstLickLatency;  
                 else % Not Stimulated
                     LickNoStim = LickNoStim+1;
                     data.SessionPerformance.licklatencyNoStim(LickNoStim+1,k) = data.trial{j,1}.Performance.FirstLickLatency;
-                    
-                end
-                
+                end 
             end
         end
-        
     elseif C(k)>midPoint
-        
         lickfieldname = ['NoGo_licked' int2str(C(k))];
         data.SessionPerformance.(lickfieldname) = [];
         noLickfieldname = ['NoGo_noLick' int2str(C(k))];
@@ -784,29 +591,19 @@ for k = 1:length(C) % create empty field for stim
         %Create arrays for NoGO without Stimulation
         data.SessionPerformance.correctTrialNoStim{k,1} = noLickfieldnameNoStim;
         data.SessionPerformance.incorrectTrialNoStim{k,1} = lickfieldnameNoStim;
-        
-        
+
         for j=1:length(data.trial);
-            
             if data.trial{j,1}.Performance.StimType==C(k) && data.trial{j,1}.Performance.OutcomeLick==0;
-                
                 noLick = noLick+1;
-                
                 if data.trial{j,1}.Performance.StimTrial==1; %Stimulated
                     noLickStim = noLickStim+1;
-                    
                 else % Not Stimulated
                     noLickNoStim = noLickNoStim+1;
                 end
-                
-                
             elseif data.trial{j,1}.Performance.StimType==C(k) && data.trial{j,1}.Performance.OutcomeLick==1;
-                
                 Lick = Lick+1;
-                
                 if data.trial{j,1}.Performance.StimTrial==1; %Stimulated
-                    LickStim = LickStim+1;
-                    
+                    LickStim = LickStim+1;  
                 else % Not Stimulated
                     LickNoStim = LickNoStim+1;
                 end
@@ -814,7 +611,6 @@ for k = 1:length(C) % create empty field for stim
         end
  
     elseif C(k)==midPoint
-        
         lickfieldname = ['Mid_licked' int2str(C(k))];
         data.SessionPerformance.(lickfieldname) = [];
         noLickfieldname = ['Mid_noLick' int2str(C(k))];
@@ -826,42 +622,30 @@ for k = 1:length(C) % create empty field for stim
         data.SessionPerformance.incorrectTrial{k,1} = noLickfieldname;
         
         for j=1:length(data.trial);
-            
             if data.trial{j,1}.Performance.StimType==C(k) && data.trial{j,1}.Performance.OutcomeLick==0;
-                
                 noLick = noLick+1;
-                
                 if data.trial{j,1}.Performance.StimTrial==1; %Stimulated
                     noLickStim = noLickStim+1;
-                    
                 else % Not Stimulated
                     noLickNoStim = noLickNoStim+1;
                 end
-                
             elseif data.trial{j,1}.Performance.StimType==C(k) && data.trial{j,1}.Performance.OutcomeLick==1;
-                
                 Lick = Lick+1;
-                
                 if data.trial{j,1}.Performance.StimTrial==1; %Stimulated
-                    LickStim = LickStim+1;
-                    
+                    LickStim = LickStim+1; 
                 else % Not Stimulated
                     LickNoStim = LickNoStim+1;
                 end
             end
-        end
-        
+        end 
     end
     
     data.SessionPerformance.(lickfieldname) = Lick;
     data.SessionPerformance.(noLickfieldname) = noLick;
-    
     data.SessionPerformance.(lickfieldnameStim) = LickStim;
     data.SessionPerformance.(noLickfieldnameStim) = noLickStim;
-    
     data.SessionPerformance.(lickfieldnameNoStim) = LickNoStim;
     data.SessionPerformance.(noLickfieldnameNoStim) = noLickNoStim;
-
 end
 
 %calculate lick latency parameters for each angle on GO/Licked stim
@@ -870,10 +654,8 @@ if length(C)>1
 
 data.SessionPerformance.Meanlicklatency(1,:) = nanmean(data.SessionPerformance.licklatency);
 data.SessionPerformance.Stdlicklatency(1,:) = nanstd(data.SessionPerformance.licklatency);
-
 data.SessionPerformance.Meanlicklatency(2,:) = nanmean(data.SessionPerformance.licklatencyNoStim);
 data.SessionPerformance.Stdlicklatency(2,:) = nanstd(data.SessionPerformance.licklatencyNoStim);
-
 data.SessionPerformance.Meanlicklatency(3,:) = nanmean(data.SessionPerformance.licklatencyStim);
 data.SessionPerformance.Stdlicklatency(3,:) = nanstd(data.SessionPerformance.licklatencyStim);
 
@@ -883,130 +665,115 @@ end
 
 data.SessionPerformance.MeanlicklatencyALL(1,:) = nanmean(data.SessionPerformance.lickTimeALL);
 data.SessionPerformance.StdlicklatencyALL(1,:) = nanstd(data.SessionPerformance.lickTimeALL);
-
 data.SessionPerformance.MeanlicklatencyALL(2,:) = nanmean(data.SessionPerformance.lickTimeALLNoStim);
 data.SessionPerformance.StdlicklatencyALL(2,:) = nanstd(data.SessionPerformance.lickTimeALLNoStim);
-
 data.SessionPerformance.MeanlicklatencyALL(3,:) = nanmean(data.SessionPerformance.lickTimeALLStim);
 data.SessionPerformance.StdlicklatencyALL(3,:) = nanstd(data.SessionPerformance.lickTimeALLStim);
 
 
 %plot All trials for GO Stim HITS
 yaxismax = 1.5;
-
 mean_latency = data.SessionPerformance.Meanlicklatency; % mean velocity
 std_latency = data.SessionPerformance.Stdlicklatency;
-figure(29);clf
-subplot(2,1,1)
-hold on
-hb = bar(1:length(mean_latency),mean_latency(1,:)');
-hb(1).FaceColor = [0.3 0.3 0.3];
-
-pause(0.1); %pause allows the figure to be created
-
-for ib = 1:numel(hb)
-    xData = hb(ib).XData+hb(ib).XOffset;
-    errorbar(xData,mean_latency(ib,:),std_latency(ib,:),'k.')
-end
-
-fontSize = 16; %font Size for plotting
-
-set(gca,'FontSize',16);
-
-set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations)/2)+.5])
-set(gca,'XTickLabel',(data.SessionPerformance.licklatencyAngle(1,:)-270))
-title('Latency to first lick for HIT GO orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
-xlabel('Hit G0 - Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
-ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
-ylim([0 yaxismax])
-
+% 
+% figure(29);clf
+% subplot(2,1,1)
+% hold on
+% hb = bar(1:length(mean_latency),mean_latency(1,:)');
+% hb(1).FaceColor = [0.3 0.3 0.3];
+% pause(0.1); %pause allows the figure to be created
+% 
+% for ib = 1:numel(hb)
+%     xData = hb(ib).XData+hb(ib).XOffset;
+%     errorbar(xData,mean_latency(ib,:),std_latency(ib,:),'k.')
+% end
+% 
+% fontSize = 16; %font Size for plotting
+% set(gca,'FontSize',16);
+% set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations)/2)+.5])
+% set(gca,'XTickLabel',(data.SessionPerformance.licklatencyAngle(1,:)-270))
+% title('Latency to first lick for HIT GO orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
+% xlabel('Hit G0 - Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
+% ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
+% ylim([0 yaxismax])
 
 %plot All trials for Stimulated and non stimulated GO Stim HITS
-figure(29);
-subplot(2,1,2)
-hold on
-hb = bar(1:length(mean_latency),mean_latency(2:3,:)');
-hb(1).FaceColor = 'blue';
-hb(2).FaceColor = 'red';
-
-pause(0.1); %pause allows the figure to be created
-
-for ib = 1:numel(hb)
-    xData = hb(ib).XData+hb(ib).XOffset;
-    errorbar(xData,mean_latency(ib+1,:),std_latency(ib+1,:),'k.')
-end
-
-fontSize = 16; %font Size for plotting
-set(gca,'FontSize',16);
-
-set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations)/2)+.5])
-set(gca,'XTickLabel',(data.SessionPerformance.licklatencyAngle(1,:)-270))
-title('Latency to first lick for HIT GO orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
-xlabel('Hit G0 - Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
-ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
-ylim([0 yaxismax])
+% figure(29);
+% subplot(2,1,2)
+% hold on
+% hb = bar(1:length(mean_latency),mean_latency(2:3,:)');
+% hb(1).FaceColor = 'blue';
+% hb(2).FaceColor = 'red';
+% pause(0.1); %pause allows the figure to be created
+% 
+% for ib = 1:numel(hb)
+%     xData = hb(ib).XData+hb(ib).XOffset;
+%     errorbar(xData,mean_latency(ib+1,:),std_latency(ib+1,:),'k.')
+% end
+% 
+% fontSize = 16; %font Size for plotting
+% set(gca,'FontSize',16);
+% set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations)/2)+.5])
+% set(gca,'XTickLabel',(data.SessionPerformance.licklatencyAngle(1,:)-270))
+% title('Latency to first lick for HIT GO orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
+% xlabel('Hit G0 - Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
+% ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
+% ylim([0 yaxismax])
 
 %plot All trials for ALL Stim ALL trials
 mean_latencyALL = data.SessionPerformance.MeanlicklatencyALL; % mean velocity
 std_latencyALL = data.SessionPerformance.StdlicklatencyALL;
-figure(30);clf
-subplot(2,1,1)
-hold on
-hb = bar(1:length(mean_latencyALL),mean_latencyALL(1,:)');
-hb(1).FaceColor = [0.3 0.3 0.3];
-
-pause(0.1); %pause allows the figure to be created
-
-for ib = 1:numel(hb)
-    xData = hb(ib).XData+hb(ib).XOffset;
-    errorbar(xData,mean_latencyALL(ib,:),std_latencyALL(ib,:),'k.')
-end
-
-fontSize = 16; %font Size for plotting
-
-set(gca,'FontSize',16);
-
-set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
-set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
-set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
-title('Latency to first lick for ALL orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
-xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
-ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
-ylim([0 yaxismax])
-
+% 
+% figure(30);clf
+% subplot(2,1,1)
+% hold on
+% hb = bar(1:length(mean_latencyALL),mean_latencyALL(1,:)');
+% hb(1).FaceColor = [0.3 0.3 0.3];
+% pause(0.1); %pause allows the figure to be created
+% 
+% for ib = 1:numel(hb)
+%     xData = hb(ib).XData+hb(ib).XOffset;
+%     errorbar(xData,mean_latencyALL(ib,:),std_latencyALL(ib,:),'k.')
+% end
+% 
+% fontSize = 16; %font Size for plotting
+% set(gca,'FontSize',16);
+% set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
+% set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
+% set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
+% title('Latency to first lick for ALL orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
+% xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
+% ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
+% ylim([0 yaxismax])
 
 %plot All trials for Stimulated and non stimulated ALL trials
-figure(30);
-subplot(2,1,2)
-hold on
-hb = bar(1:length(mean_latencyALL),mean_latencyALL(2:3,:)');
-hb(1).FaceColor = 'blue';
-hb(2).FaceColor = 'red';
-
-pause(0.1); %pause allows the figure to be created
-
-for ib = 1:numel(hb)
-    xData = hb(ib).XData+hb(ib).XOffset;
-    errorbar(xData,mean_latencyALL(ib+1,:),std_latencyALL(ib+1,:),'k.')
-end
-
-fontSize = 16; %font Size for plotting
-
-set(gca,'FontSize',16);
-
-set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
-set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
-set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
-title('Latency to first lick for ALL orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
-xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
-ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
-ylim([0 yaxismax])
+% figure(30);
+% subplot(2,1,2)
+% hold on
+% hb = bar(1:length(mean_latencyALL),mean_latencyALL(2:3,:)');
+% hb(1).FaceColor = 'blue';
+% hb(2).FaceColor = 'red';
+% pause(0.1); %pause allows the figure to be created
+% 
+% for ib = 1:numel(hb)
+%     xData = hb(ib).XData+hb(ib).XOffset;
+%     errorbar(xData,mean_latencyALL(ib+1,:),std_latencyALL(ib+1,:),'k.')
+% end
+% 
+% fontSize = 16; %font Size for plotting
+% set(gca,'FontSize',16);
+% set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
+% set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
+% set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
+% title('Latency to first lick for ALL orientation stimuli', 'FontSize', fontSize,'fontWeight','bold');
+% xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
+% ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
+% ylim([0 yaxismax])
 
 %% Test Pad data.trial and align to reward onset TEST
 PreStim=1000; %time stamps are in 10ms bins, so 100 = 1 second 200 = 2seconds
 PostStim=200;
 fullSampleTime = PreStim+PostStim;
-
 TimePointsMin = -PreStim:1:PostStim-1;
 
 %varToAlign = {'TargetMinIdx'};
@@ -1264,13 +1031,13 @@ end
 
 fontSize = 16;
 
-%varToPlot = {'AlignedDATAallDATA'};
+varToPlot = {'AlignedDATAallDATA'};
 %varToPlot = {'AlignedDATAallDATAStim'};
 %varToPlot = {'AlignedDATAallDATAStim' 'AlignedDATAallDATADist'};
 %varToPlot = {'AlignedDATAallDATA' 'AlignedDATAallDATAStim' 'AlignedDATAallDATADist'}
 
 %varToPlot = {'AlignedDATAallDATAHoloStim'};
-varToPlot = {'AlignedDATAallDATA' 'AlignedDATAallDATAHoloStim' 'AlignedDATAallDATAHoloNoStim'};
+%varToPlot = {'AlignedDATAallDATA' 'AlignedDATAallDATAHoloStim' 'AlignedDATAallDATAHoloNoStim'};
 
 
 
