@@ -35,7 +35,7 @@ else
 end
 
 %create a tempDATA file for this session
-tempDATA = DATA.allFiles{1,17}.rawData;
+tempDATA = DATA.allFiles{1,5}.rawData;
 %tempDATA = DATA.allFiles{1,filenameIdx}.rawData;
 
 midPoint = 270; %midpoint angle
