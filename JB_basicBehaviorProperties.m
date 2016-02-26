@@ -1,11 +1,14 @@
 function [] = JB_basicBehaviorProperties(plotfig)
 
+positionGraph1 = [14   83   503   869];
+positionGraph2 = [602   83   644   869];
+positionGraph3 = [1268   83   644   869];
+
 
 if nargin==1;
     plotON = plotfig;
 end
-
-
+%%
 load('DATA.mat')
 sessionType = 1;
 basisPropertiesID{sessionType,1} = 'sessionType';
@@ -67,6 +70,25 @@ for i=1:length(DATA.allFiles);
     
     basicProperties{i,1}.date = DATA.allFiles{i}.date;
     basicProperties{i,1}.datenum = DATA.allFiles{i}.dateFromFile;
+    
+    tempName = DATA.allFiles{i}.name;
+     startIdx = findstr('_201',tempName);
+        endIdx = findstr('_Box',tempName);
+        tempName = tempName(startIdx:endIdx);
+        tempLocation = findstr(tempName,'_');
+     for hh = 1:length(tempLocation)-1;
+            if(tempLocation(hh+1)-tempLocation(hh))==2;
+                startName = tempName(1:tempLocation(hh));
+                endName = tempName(tempLocation(hh)+1:end);
+                tempName = strcat(startName,'0',endName);
+                tempLocation = tempLocation+1;
+            end
+     end
+
+      toDelete = strfind(tempName,'_');
+      tempName(toDelete)='.';
+        
+     basicProperties{i,1}.namedata = tempName;
     
     tempDATA = DATA.allFiles{i}.rawData;
     basicProperties{i,1}.sessionDuration = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
@@ -188,6 +210,8 @@ for i=1:length(DATA.allFiles);
         
     end
     
+%     angleUsed = unique(DATA.allFiles{1,i}.rawData(:,11));
+%       tempAngles = angleUsed(angleUsed>200);
     [ind] = cell2mat(metaData(match,2));
     tempAngles = ind(ind>0);
     %         if (match(j,1)==1) && (metaData{j,2}>0)
@@ -209,7 +233,6 @@ for i=1:length(DATA.allFiles);
         tempsessionType = strcat(tempsessionType,'auto');
         basicProperties{i,1}.stimNumber = 0;
     end
-    
     basicProperties{i,1}.sessionType = tempsessionType;
     
 end
@@ -246,7 +269,8 @@ end
 %%
 
 if (plotON==1)
-figure;clf
+f = figure;clf
+set(f,'Position',positionGraph1);
 else 
 figure('Visible','off');clf;
 end
@@ -392,7 +416,8 @@ plotTally = (plotRows*plotCols);
 numFigs = 1;
 
 if (plotON==1)
-figure;clf
+ff=figure;clf
+set(ff,'Position',positionGraph2);
 else 
 figure('Visible','off');clf;
 end
@@ -425,6 +450,7 @@ for h = 1:length(numPoints)
         ylabel('Performance');
         ylim([0 1])
         xlimit = xlim;
+        text(xlimit(1),1.05,basicPropertiesToPlot{h,1}.namedata)
         
         if(negReinforcer(h,1)==1)
             squareLeg1 =  plot(xlimit(2),0.1,'rs','MarkerFaceColor','r', 'MarkerSize',8);
@@ -487,7 +513,8 @@ for h = 1:length(numPoints)
             saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
             saved = 1;
             if (plotON==1)
-figure;clf
+ff=figure;clf
+set(ff,'Position',positionGraph2);
 else 
 figure('Visible','off');clf;
             end
@@ -502,8 +529,16 @@ figure('Visible','off');clf;
             saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
         end
     end
+    
 end
 
+if currPlot==1
+    
+    close(ff)
+    
+end
+    
+    
 
 plotRows = 4;
 plotCols = 2;
@@ -511,7 +546,8 @@ plotTally = (plotRows*plotCols);
 numFigs = 1;
 
 if (plotON==1)
-figure;clf
+fff=figure;clf
+set(fff,'Position',positionGraph3);
 else 
 figure('Visible','off');clf;
 end
@@ -541,7 +577,9 @@ for h = 1:length(numPoints)
         currPlot=currPlot+1;
         xlabel('Angles');
         ylabel('Performance');
+        xlimit = xlim;
         ylim([0 1])
+        text(xlimit(1),1.05,basicPropertiesToPlot{h,1}.namedata)
         
         subplot(plotRows,plotCols,currPlot);
         plot(plotAngles,probLickSTIM,'o-r');
@@ -563,7 +601,8 @@ set(hL, 'Position', newPosition, 'Box', 'off')
         saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\optogenetics',baseFileName),'jpeg');
             saved = 1;
             if (plotON==1)
-figure;clf
+fff=figure;clf
+set(fff,'Position',positionGraph3);
 else 
 figure('Visible','off');clf;
             end
@@ -571,6 +610,12 @@ figure('Visible','off');clf;
             currPlot = 1;
      end
     end
+end
+
+if currPlot==1
+    
+    close(fff)
+    
 end
 
 % figure;clf;
