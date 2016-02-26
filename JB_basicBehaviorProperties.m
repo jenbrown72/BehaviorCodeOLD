@@ -3,6 +3,7 @@ function [] = JB_basicBehaviorProperties(plotfig)
 positionGraph1 = [14   83   503   869];
 positionGraph2 = [602   83   644   869];
 positionGraph3 = [1268   83   644   869];
+positionGraph4 = [32   515   354   438];
 
 
 if nargin==1;
@@ -72,23 +73,23 @@ for i=1:length(DATA.allFiles);
     basicProperties{i,1}.datenum = DATA.allFiles{i}.dateFromFile;
     
     tempName = DATA.allFiles{i}.name;
-     startIdx = findstr('_201',tempName);
-        endIdx = findstr('_Box',tempName);
-        tempName = tempName(startIdx:endIdx);
-        tempLocation = findstr(tempName,'_');
-     for hh = 1:length(tempLocation)-1;
-            if(tempLocation(hh+1)-tempLocation(hh))==2;
-                startName = tempName(1:tempLocation(hh));
-                endName = tempName(tempLocation(hh)+1:end);
-                tempName = strcat(startName,'0',endName);
-                tempLocation = tempLocation+1;
-            end
-     end
-
-      toDelete = strfind(tempName,'_');
-      tempName(toDelete)='.';
-        
-     basicProperties{i,1}.namedata = tempName;
+    startIdx = findstr('_201',tempName);
+    endIdx = findstr('_Box',tempName);
+    tempName = tempName(startIdx:endIdx);
+    tempLocation = findstr(tempName,'_');
+    for hh = 1:length(tempLocation)-1;
+        if(tempLocation(hh+1)-tempLocation(hh))==2;
+            startName = tempName(1:tempLocation(hh));
+            endName = tempName(tempLocation(hh)+1:end);
+            tempName = strcat(startName,'0',endName);
+            tempLocation = tempLocation+1;
+        end
+    end
+    
+    toDelete = strfind(tempName,'_');
+    tempName(toDelete)='.';
+    
+    basicProperties{i,1}.namedata = tempName;
     
     tempDATA = DATA.allFiles{i}.rawData;
     basicProperties{i,1}.sessionDuration = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
@@ -113,7 +114,7 @@ for i=1:length(DATA.allFiles);
     % [idx] = find(angleUsed>0); %no 0
     
     for kk=1:length(possibleAngles)
-     %   clear performanceAngleTempSTIM performanceAngleTempNoSTIM;
+        %   clear performanceAngleTempSTIM performanceAngleTempNoSTIM;
         
         stimCount = 1;
         nostimCount = 1;
@@ -123,30 +124,19 @@ for i=1:length(DATA.allFiles);
         
         if ~isempty(idxAngles)
             if tempOpto==1
-                
                 for ff = 1:length(idxAngles)
-                    
                     if (tempOptogenetics(idxAngles(ff))==1)
-                        
                         performanceAngleTempSTIM(stimCount,1) = temptrialTypes(idxAngles(ff));
                         stimCount = stimCount+1;
-                        
                     else
-                        
                         performanceAngleTempNoSTIM(nostimCount,1) = temptrialTypes(idxAngles(ff));
                         nostimCount = nostimCount+1;
                     end
-                    
-                    
                 end
-                
             end
-            
         else
-            
             performanceAngleTempSTIM = nan;
             performanceAngleTempNoSTIM = nan;
-            
         end
         
         HITangle = sum(performanceAngleTemp==1);
@@ -194,6 +184,37 @@ for i=1:length(DATA.allFiles);
     
     basicProperties{i,1}.sessionperformance = (basicProperties{i,1}.HIT+basicProperties{i,1}.CR)/(length(temptrialTypes));
     
+    %        %D' - discrimitability index
+    %when H=F, then d' =0
+    %Highest Possible d' (greatest sensitivity) is 6.93, the effective limit
+    %(using .99 and .01) 4.65, typical values are up to 2 and 69% correct for
+    %both different and same trials corresponds to a d' of 1.0.
+    
+    
+    basicProperties{i,1}.dprime=norminv(( basicProperties{i,1}.HIT/( basicProperties{i,1}.HIT+basicProperties{i,1}.MISS)),0,1)-norminv((basicProperties{i,1}.FA/(basicProperties{i,1}.FA+basicProperties{i,1}.CR)),0,1);
+    
+    
+    
+    %now look at optogenetic sessions
+    
+    if (tempOpto==1)
+        
+        basicProperties{i,1}.HITStim = sum((temptrialTypes==1)&(tempOptogenetics==1))+1; %HitTrialCount
+        basicProperties{i,1}.FAStim = sum((temptrialTypes==2)&(tempOptogenetics==1))+1; % FATrialCount
+        basicProperties{i,1}.MISSStim = sum((temptrialTypes==3)&(tempOptogenetics==1))+1; %MissTrialCount
+        basicProperties{i,1}.CRStim = sum((temptrialTypes==4)&(tempOptogenetics==1))+1; %CRTrialCount
+        
+        basicProperties{i,1}.HITNoStim = sum((temptrialTypes==1)&(tempOptogenetics==0))+1; %HitTrialCount
+        basicProperties{i,1}.FANoStim = sum((temptrialTypes==2)&(tempOptogenetics==0))+1; % FATrialCount
+        basicProperties{i,1}.MISSNoStim = sum((temptrialTypes==3)&(tempOptogenetics==0))+1; %MissTrialCount
+        basicProperties{i,1}.CRNoStim = sum((temptrialTypes==4)&(tempOptogenetics==0))+1; %CRTrialCount
+        
+        basicProperties{i,1}.dprimeSTIM=norminv(( basicProperties{i,1}.HITStim/( basicProperties{i,1}.HITStim+basicProperties{i,1}.MISSStim)),0,1)-norminv((basicProperties{i,1}.FAStim/(basicProperties{i,1}.FAStim+basicProperties{i,1}.CRStim)),0,1);
+        basicProperties{i,1}.dprimeNoSTIM=norminv(( basicProperties{i,1}.HITNoStim/( basicProperties{i,1}.HITNoStim+basicProperties{i,1}.MISSNoStim)),0,1)-norminv((basicProperties{i,1}.FANoStim/(basicProperties{i,1}.FANoStim+basicProperties{i,1}.CRNoStim)),0,1);
+        basicProperties{i,1}.sessionperformanceSTIM = (basicProperties{i,1}.HITStim+basicProperties{i,1}.CRStim)/(sum(tempOptogenetics==1)+4);
+        basicProperties{i,1}.sessionperformanceNoSTIM = (basicProperties{i,1}.HITNoStim+basicProperties{i,1}.CRNoStim)/(sum(tempOptogenetics==0)+4);
+    end
+    
     %import as metaDATA cell array
     n=1;
     
@@ -210,8 +231,8 @@ for i=1:length(DATA.allFiles);
         
     end
     
-%     angleUsed = unique(DATA.allFiles{1,i}.rawData(:,11));
-%       tempAngles = angleUsed(angleUsed>200);
+    %     angleUsed = unique(DATA.allFiles{1,i}.rawData(:,11));
+    %       tempAngles = angleUsed(angleUsed>200);
     [ind] = cell2mat(metaData(match,2));
     tempAngles = ind(ind>0);
     %         if (match(j,1)==1) && (metaData{j,2}>0)
@@ -269,10 +290,10 @@ end
 %%
 
 if (plotON==1)
-f = figure;clf
-set(f,'Position',positionGraph1);
-else 
-figure('Visible','off');clf;
+    f = figure;clf
+    set(f,'Position',positionGraph1);
+else
+    figure('Visible','off');clf;
 end
 
 tempTitle = DATA.mouseID;
@@ -290,18 +311,18 @@ end
 
 ylabel('totalStepsPerMin');
 xlabel('Session Number');
-
-subplot(noSubPlots,1,2)
-for j = 1:length(numPoints);
-    plot(numPoints(j),basicPropertiesToPlot{j}.sessionDuration,'or','MarkerSize', 10,'MarkerFaceColor','r')
-    hold on
-end
-
-ylabel('sessionDuration');
-xlabel('Session Number');
+%
+% subplot(noSubPlots,1,2)
+% for j = 1:length(numPoints);
+%     plot(numPoints(j),basicPropertiesToPlot{j}.sessionDuration,'or','MarkerSize', 10,'MarkerFaceColor','r')
+%     hold on
+% end
+%
+% ylabel('sessionDuration');
+% xlabel('Session Number');
 
 %plot primary session type per day
-subplot(noSubPlots,1,3)
+subplot(noSubPlots,1,2)
 SessionTypes = {'S1auto' ; 'S1'; 'S2'; 'S6'; 'S8'; 'S10'; 'S12'};
 
 for j = 1:length(numPoints);
@@ -348,7 +369,7 @@ ylabel('Session Type');
 xlabel('Session Number');
 
 %plot performance
-subplot(noSubPlots,1,4)
+subplot(noSubPlots,1,3)
 addtoLegend = 1;
 addedWater = 0;
 addedNeg = 0;
@@ -383,7 +404,7 @@ for jj = 1:length(numPoints);
     
     if optogenetics(jj)==1;
         circle3 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.sessionperformance,'*y','MarkerSize', 5);
-       hold on
+        hold on
         if (addedOpto==0)
             legendAdd(addtoLegend,:) = circle3;
             legendTab{addtoLegend} = 'optogenetics';
@@ -397,6 +418,58 @@ for jj = 1:length(numPoints);
     ylabel('Performance');
     xlabel('Session Number');
 end
+
+
+%plot Dprime
+subplot(noSubPlots,1,4)
+addtoLegend = 1;
+addedWater = 0;
+addedNeg = 0;
+addedOpto = 0;
+
+legendAdd = [];
+legendTab = [];
+for jj = 1:length(numPoints);
+    
+    if waterSchedule(jj)==1;
+        circle1 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.dprime,'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0,0,waterSchedule(jj)], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
+        hold on
+        if (addedWater==0)
+            legendAdd(addtoLegend,:) = circle1;
+            legendTab{addtoLegend} = 'water schedule';
+            addedWater=1;
+            addtoLegend=addtoLegend+1;
+        end
+    elseif negReinforcer(jj)==1;
+        circle2 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.dprime,'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[negReinforcer(jj),0,0], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
+        hold on
+        if (addedNeg==0)
+            legendAdd(addtoLegend,:) = circle2;
+            legendTab{addtoLegend} = 'neg reinforcement';
+            addedNeg=1;
+            addtoLegend=addtoLegend+1;
+        end
+    else
+        plot(numPoints(jj),basicPropertiesToPlot{jj,1}.dprime,'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0.4,ColorCodeColors(colorCode(jj)),0.8], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
+    end
+    hold on
+    
+    if optogenetics(jj)==1;
+        circle3 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.dprime,'*y','MarkerSize', 5);
+        hold on
+        if (addedOpto==0)
+            legendAdd(addtoLegend,:) = circle3;
+            legendTab{addtoLegend} = 'optogenetics';
+            addedOpto = 1;
+            addtoLegend=addtoLegend+1;
+        end
+    end
+    plot([0 max(numPoints)],[1 1],'k--')
+    xlim([0 length(numPoints)])
+    ylabel('dprime');
+    xlabel('Session Number');
+end
+
 
 if(length(legendAdd))>0
     hLL = legend([legendAdd(1:length(legendAdd))], legendTab{:});
@@ -416,10 +489,10 @@ plotTally = (plotRows*plotCols);
 numFigs = 1;
 
 if (plotON==1)
-ff=figure;clf
-set(ff,'Position',positionGraph2);
-else 
-figure('Visible','off');clf;
+    ff=figure;clf
+    set(ff,'Position',positionGraph2);
+else
+    figure('Visible','off');clf;
 end
 
 set(gcf,'name',tempTitle,'numbertitle','off')
@@ -451,6 +524,8 @@ for h = 1:length(numPoints)
         ylim([0 1])
         xlimit = xlim;
         text(xlimit(1),1.05,basicPropertiesToPlot{h,1}.namedata)
+        str = strcat('d'' ', num2str(basicPropertiesToPlot{h,1}.dprime));
+        text(xlimit(1),0.1,str)
         
         if(negReinforcer(h,1)==1)
             squareLeg1 =  plot(xlimit(2),0.1,'rs','MarkerFaceColor','r', 'MarkerSize',8);
@@ -461,7 +536,7 @@ for h = 1:length(numPoints)
                 addtoLegend=addtoLegend+1;
             end
         end
-
+        
         if(waterSchedule(h,1)==1)
             squareLeg2 = plot(xlimit(2),0.2,'gs','MarkerFaceColor','b', 'MarkerSize',8);
             
@@ -507,16 +582,16 @@ for h = 1:length(numPoints)
                 addedWater = 0;
                 addedNeg = 0;
                 addedOpto = 0;
-               clear legendTab legendAdd;
+                clear legendTab legendAdd;
                 
             end
             saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
             saved = 1;
             if (plotON==1)
-ff=figure;clf
-set(ff,'Position',positionGraph2);
-else 
-figure('Visible','off');clf;
+                ff=figure;clf
+                set(ff,'Position',positionGraph2);
+            else
+                figure('Visible','off');clf;
             end
             numFigs = numFigs+1;
             currPlot = 1;
@@ -537,8 +612,8 @@ if currPlot==1
     close(ff)
     
 end
-    
-    
+
+
 
 plotRows = 4;
 plotCols = 2;
@@ -546,14 +621,15 @@ plotTally = (plotRows*plotCols);
 numFigs = 1;
 
 if (plotON==1)
-fff=figure;clf
-set(fff,'Position',positionGraph3);
-else 
-figure('Visible','off');clf;
+    fff=figure;clf
+    set(fff,'Position',positionGraph3);
+else
+    figure('Visible','off');clf;
 end
 
 set(gcf,'name',tempTitle,'numbertitle','off')
 currPlot = 1;
+tn=1;
 
 for h = 1:length(numPoints)
     
@@ -580,6 +656,12 @@ for h = 1:length(numPoints)
         xlimit = xlim;
         ylim([0 1])
         text(xlimit(1),1.05,basicPropertiesToPlot{h,1}.namedata)
+        str = ['d'' C/S',' ', num2str(basicPropertiesToPlot{h,1}.dprimeNoSTIM),' / ', num2str(basicPropertiesToPlot{h,1}.dprimeSTIM)];
+        text(xlimit(1),0.1,str)
+        
+        tempdPrime(tn,:) = [basicPropertiesToPlot{h,1}.dprimeNoSTIM, basicPropertiesToPlot{h,1}.dprimeSTIM];
+        tempdPerformance(tn,:) = [basicPropertiesToPlot{h,1}.sessionperformanceNoSTIM, basicPropertiesToPlot{h,1}.sessionperformanceSTIM];
+        tn=tn+1;
         
         subplot(plotRows,plotCols,currPlot);
         plot(plotAngles,probLickSTIM,'o-r');
@@ -590,25 +672,25 @@ for h = 1:length(numPoints)
         ylabel('Licking Probability');
         ylim([0 1])
     end
-
+    
     if (currPlot>1)
-     if rem(currPlot,plotTally)==1 %if the value is divisable by 4 - open a new plot
+        if rem(currPlot,plotTally)==1 %if the value is divisable by 4 - open a new plot
             baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
-         hL = legend([line1, line2],{'Stimulated', 'Control'});
-newPosition = [0 0 0.2 0.1];
-set(hL, 'Position', newPosition, 'Box', 'off')
-
-        saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\optogenetics',baseFileName),'jpeg');
+            hL = legend([line1, line2],{'Stimulated', 'Control'});
+            newPosition = [0 0 0.2 0.1];
+            set(hL, 'Position', newPosition, 'Box', 'off')
+            
+            saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\optogenetics',baseFileName),'jpeg');
             saved = 1;
             if (plotON==1)
-fff=figure;clf
-set(fff,'Position',positionGraph3);
-else 
-figure('Visible','off');clf;
+                fff=figure;clf
+                set(fff,'Position',positionGraph3);
+            else
+                figure('Visible','off');clf;
             end
             numFigs = numFigs+1;
             currPlot = 1;
-     end
+        end
     end
 end
 
@@ -617,12 +699,69 @@ if currPlot==1
     close(fff)
     
 end
+currPlot=1;
 
-% figure;clf;
-% for jj = 1:length(numPoints);
-%     plot(basicPropertiesToPlot{jj,1}.stimNumber,basicPropertiesToPlot{jj,1}.sessionperformance,'*','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8])
-%     hold on
-% end
-
-
+if ~isempty(tempdPrime)
+    
+    plotRows = 2;
+    plotCols = 1;
+    plotTally = (plotRows*plotCols);
+    numFigs = 1;
+    
+    if (plotON==1)
+        ffff=figure;clf
+        set(ffff,'Position',positionGraph4);
+    else
+        figure('Visible','off');clf;
+    end
+    
+    meandPrime = mean(tempdPrime);
+    SEMdPrime = std(tempdPrime)/sqrt(length(tempdPrime));
+    [h,p] = ttest(tempdPrime(:,1),tempdPrime(:,2));
+    
+    subplot(plotRows,plotCols,currPlot);
+    plot(tempdPrime','k-')
+    hold on
+    errorbar(meandPrime,SEMdPrime,'r-','LineWidth',5)
+    set(gca,'XTick',[1:2]);
+    set(gca,'XTickLabel',['Cntr';'Stim']);
+    xlimit = [0.5 2.5];
+    set(gca, 'Xlim',[xlimit(1) xlimit(2)])
+    ylimit = ylim;
+    ylim([0 ylimit(2)]);
+    set(gca, 'Ylim',[0 ylimit(2)])
+    str = ['P = ', num2str(p)];
+    ylabel('d prime');
+    text(xlimit(1),0.2,str)
+    currPlot=currPlot+1;
+    
+    
+    meandPrime = mean(tempdPerformance);
+    SEMdPrime = std(tempdPerformance)/sqrt(length(tempdPerformance));
+    [h,p] = ttest(tempdPerformance(:,1),tempdPerformance(:,2))
+    
+    subplot(plotRows,plotCols,currPlot);
+    plot(tempdPerformance','k-')
+    hold on
+    errorbar(meandPrime,SEMdPrime,'r-','LineWidth',5)
+    set(gca,'XTick',[1:2]);
+    set(gca,'XTickLabel',['Cntr';'Stim']);
+    xlimit = [0.5 2.5];
+    set(gca, 'Xlim',[xlimit(1) xlimit(2)])
+    ylimit = ylim;
+    ylim([0 ylimit(2)]);
+    set(gca, 'Ylim',[0 ylimit(2)])
+    str = ['P = ', num2str(p)];
+    ylabel('Performance');
+    text(xlimit(1),0.2,str)
+    
+    
+    
+    % figure;clf;
+    % for jj = 1:length(numPoints);
+    %     plot(basicPropertiesToPlot{jj,1}.stimNumber,basicPropertiesToPlot{jj,1}.sessionperformance,'*','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8])
+    %     hold on
+    % end
+    
+    
 end
