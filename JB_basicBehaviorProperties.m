@@ -4,7 +4,7 @@ positionGraph1 = [14   83   503   869];
 positionGraph2 = [602   83   644   869];
 positionGraph3 = [1268   83   644   869];
 positionGraph4 = [32   515   354   438];
-
+tempdPrime= [];
 
 if nargin==1;
     plotON = plotfig;
@@ -288,6 +288,8 @@ for k = 1:length(unique_idx)
     end
 end
 %%
+
+if plotON==1
 
 if (plotON==1)
     f = figure;clf
@@ -606,11 +608,11 @@ for h = 1:length(numPoints)
     end
     
 end
-
-if currPlot==1
+if  (plotON==1)
+if (currPlot==1)
     
     close(ff)
-    
+end
 end
 
 
@@ -694,10 +696,11 @@ for h = 1:length(numPoints)
     end
 end
 
+if (plotON==1)
 if currPlot==1
     
     close(fff)
-    
+end 
 end
 currPlot=1;
 
@@ -762,6 +765,6 @@ if ~isempty(tempdPrime)
     %     plot(basicPropertiesToPlot{jj,1}.stimNumber,basicPropertiesToPlot{jj,1}.sessionperformance,'*','MarkerSize', 10,'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8])
     %     hold on
     % end
-    
+end
     
 end
