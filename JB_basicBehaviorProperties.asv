@@ -6,7 +6,7 @@ positionGraph3 = [1268   83   644   869];
 positionGraph4 = [32   515   354   438];
 positionGraph5 = [1214  230  580 736];
 positionGraph6 = [634   230   579   737];
-
+tempdPrime= [];
 
 if nargin==1;
     plotON = plotfig;
@@ -739,11 +739,9 @@ if plotON==1
     set(gcf,'name',tempTitle,'numbertitle','off')
     currPlot = 1;
     tn=1;
-    tempdPrime = nan(length(numPoints),1);
-    tempdPerformance = nan(length(numPoints),1);
     
     for h = 1:length(numPoints)
-
+        
         if (basicPropertiesToPlot{h,1}.optogenetics)==1
             activeAnglesSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceSTIM);
             activeAnglesnoSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceNoSTIM);
@@ -792,6 +790,7 @@ if plotON==1
                 set(hL, 'Position', newPosition, 'Box', 'off')
                 
                 saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\optogenetics',baseFileName),'jpeg');
+                saved = 1;
                 if (plotON==1)
                     fff=figure;clf
                     set(fff,'Position',positionGraph3);
@@ -812,13 +811,11 @@ if plotON==1
     end
     currPlot=1;
     
-    tempdPrime(isnan(tempdPrime)) = [];
-    tempdPerformance(isnan(tempdPerformance)) = [];
-    
-    if any(tempdPrime)
+    if ~isempty(tempdPrime)
         
         plotRows = 2;
         plotCols = 1;
+        plotTally = (plotRows*plotCols);
         numFigs = 1;
         
         if (plotON==1)
@@ -830,7 +827,7 @@ if plotON==1
         
         meandPrime = mean(tempdPrime);
         SEMdPrime = std(tempdPrime)/sqrt(length(tempdPrime));
-        [~,p] = ttest(tempdPrime(:,1),tempdPrime(:,2));
+        [h,p] = ttest(tempdPrime(:,1),tempdPrime(:,2));
         
         subplot(plotRows,plotCols,currPlot);
         plot(tempdPrime','k-')
@@ -849,8 +846,8 @@ if plotON==1
         currPlot=currPlot+1;
         
         
-        meandPrime = nanmean(tempdPerformance);
-        SEMdPrime = nanstd(tempdPerformance)/sqrt(length(tempdPerformance));
+        meandPrime = mean(tempdPerformance);
+        SEMdPrime = std(tempdPerformance)/sqrt(length(tempdPerformance));
         [~,p] = ttest(tempdPerformance(:,1),tempdPerformance(:,2));
         
         subplot(plotRows,plotCols,currPlot);

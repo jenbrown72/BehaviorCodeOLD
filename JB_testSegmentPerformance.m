@@ -7,6 +7,7 @@
 %     data.CumulativePerformance(j,5) = data.trial{j,1}.Performance.OutcomeCode;
 %     data.CumulativePerformance(j,6) = data.trial{j,1}.Performance.StimTrial;
 % end
+fontSize = 16; %font Size for plotting
 
 prompt = 'If this was a segmented session - input time points';
 sessionDivisions = input(prompt);
@@ -34,4 +35,16 @@ for j = 1:length(sessionDivisions)
 end
 
 figure;clf;
-plot(segmentPerformance)
+plot(segmentPerformance,'ok-')
+hold on
+line([1 max(xlim)],[0.5 0.5],'Color','r','LineStyle','--','LineWidth',2)
+SessionTypes = {'Cntr' ; 'Stim out'; 'Cntr'; 'Stim out'};
+NumTicks = length(SessionTypes);
+L = get(gca,'XLim');
+set(gca,'XTick',linspace(L(1),L(2),NumTicks));
+
+ylim([0 1]);
+title('Performance over blocks', 'FontSize', fontSize,'fontWeight','bold');
+xlabel('Block number', 'FontSize', fontSize,'fontWeight','bold');
+ylabel('Percent Correct ((hit+CR)/totalTrials', 'FontSize', fontSize,'fontWeight','bold');
+set(gca,'XTickLabel',SessionTypes)

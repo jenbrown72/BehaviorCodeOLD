@@ -35,7 +35,7 @@ else
 end
 
 %create a tempDATA file for this session
-tempDATA = DATA.allFiles{1,5}.rawData;
+tempDATA = DATA.allFiles{1,filenameIdx}.rawData;
 %tempDATA = DATA.allFiles{1,filenameIdx}.rawData;
 
 midPoint = 270; %midpoint angle
@@ -483,21 +483,21 @@ for k = 1:length(C)
 end
 % 
 % figure(31);clf
-% plot(data.SessionPerformance.lickCountALLNorm(1,:),'k')
-% hold on
-% plot(data.SessionPerformance.lickCountALLNorm(2,:),'b')
-% hold on
-% plot(data.SessionPerformance.lickCountALLNorm(3,:),'r')
-% hold on
-% 
-% fontSize = 16; %font Size for plotting
-% set(gca,'FontSize',16);
-% set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
-% set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
-% set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
-% title('Normalised of lick verses no lick trials', 'FontSize', fontSize,'fontWeight','bold');
-% xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
-% ylabel('Count', 'FontSize', fontSize,'fontWeight','bold');
+plot(data.SessionPerformance.lickCountALLNorm(1,:),'k')
+hold on
+plot(data.SessionPerformance.lickCountALLNorm(2,:),'b')
+hold on
+plot(data.SessionPerformance.lickCountALLNorm(3,:),'r')
+hold on
+
+fontSize = 16; %font Size for plotting
+set(gca,'FontSize',16);
+set(gca,'XLim',[.5 (length(data.SessionPerformance.orientations))+.5])
+set(gca,'XTick', 1:1:length(data.SessionPerformance.orientations))
+set(gca,'XTickLabel',(data.SessionPerformance.lickTimeALLAngle(1,:)-270))
+title('Normalised of lick verses no lick trials', 'FontSize', fontSize,'fontWeight','bold');
+xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
+ylabel('Count', 'FontSize', fontSize,'fontWeight','bold');
 
 
 for k = 1:length(C) % create empty field for stim
@@ -670,11 +670,11 @@ data.SessionPerformance.StdlicklatencyALL(2,:) = nanstd(data.SessionPerformance.
 data.SessionPerformance.MeanlicklatencyALL(3,:) = nanmean(data.SessionPerformance.lickTimeALLStim);
 data.SessionPerformance.StdlicklatencyALL(3,:) = nanstd(data.SessionPerformance.lickTimeALLStim);
 
-
-%plot All trials for GO Stim HITS
-yaxismax = 1.5;
-mean_latency = data.SessionPerformance.Meanlicklatency; % mean velocity
-std_latency = data.SessionPerformance.Stdlicklatency;
+% 
+% %plot All trials for GO Stim HITS
+% yaxismax = 1.5;
+% mean_latency = data.SessionPerformance.Meanlicklatency; % mean velocity
+% std_latency = data.SessionPerformance.Stdlicklatency;
 % 
 % figure(29);clf
 % subplot(2,1,1)
@@ -696,8 +696,8 @@ std_latency = data.SessionPerformance.Stdlicklatency;
 % xlabel('Hit G0 - Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
 % ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
 % ylim([0 yaxismax])
-
-%plot All trials for Stimulated and non stimulated GO Stim HITS
+% 
+% %plot All trials for Stimulated and non stimulated GO Stim HITS
 % figure(29);
 % subplot(2,1,2)
 % hold on
@@ -719,10 +719,10 @@ std_latency = data.SessionPerformance.Stdlicklatency;
 % xlabel('Hit G0 - Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
 % ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
 % ylim([0 yaxismax])
-
-%plot All trials for ALL Stim ALL trials
-mean_latencyALL = data.SessionPerformance.MeanlicklatencyALL; % mean velocity
-std_latencyALL = data.SessionPerformance.StdlicklatencyALL;
+% 
+% %plot All trials for ALL Stim ALL trials
+% mean_latencyALL = data.SessionPerformance.MeanlicklatencyALL; % mean velocity
+% std_latencyALL = data.SessionPerformance.StdlicklatencyALL;
 % 
 % figure(30);clf
 % subplot(2,1,1)
@@ -745,8 +745,8 @@ std_latencyALL = data.SessionPerformance.StdlicklatencyALL;
 % xlabel('Orientation Angle', 'FontSize', fontSize,'fontWeight','bold');
 % ylabel('Latency (sec)', 'FontSize', fontSize,'fontWeight','bold');
 % ylim([0 yaxismax])
-
-%plot All trials for Stimulated and non stimulated ALL trials
+% 
+% %plot All trials for Stimulated and non stimulated ALL trials
 % figure(30);
 % subplot(2,1,2)
 % hold on
