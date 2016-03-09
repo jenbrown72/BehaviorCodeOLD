@@ -5,7 +5,7 @@ positionGraph2 = [602   83   644   869];
 positionGraph3 = [1268   83   644   869];
 positionGraph4 = [32   515   354   438];
 positionGraph5 = [1214  230  580 736];
-positionGraph6 = [634   230   579   737];
+positionGraph6 = [602    83   644   869];
 
 
 if nargin==1;
@@ -102,13 +102,33 @@ for i=1:length(DATA.allFiles);
         basicProperties{i,1}.trimming = [];
     end
     
-    
+    %find out if this session had segments
     segIdx = find(strcmp('Segments = ', metaData));
     if ~isempty(segIdx)
         
         tempSeg = metaData{segIdx,2};
-        basicProperties{i,1}.segments = str2num(tempSeg);
+        tempSegNum = str2num(tempSeg);
         
+        if (tempSegNum(1)==1) && (tempSegNum(2)==1)
+            
+            tempData = DATA.allFiles{i}.rawData;
+            index = find(all(tempData==1,2));
+            index = [index; length(tempData)]; %add a one to find the start of the first segment
+            
+            segments(1,1) = 1; %add first trial
+            for kk=1:length(index)-1;
+                
+                countCummulative = tempData(index(kk)-1,6);
+                tempData(index(kk)+1:index(kk+1),6) = tempData(index(kk)+1:index(kk+1),6)+countCummulative;
+                basicProperties{i,1}.segments(kk,2) = countCummulative;
+                basicProperties{i,1}.segments(kk+1,1) = countCummulative+1;
+                
+            end
+            basicProperties{i,1}.segments(length(basicProperties{i,1}.segments),2) = tempData(length(tempData),6); %add last trial
+            
+        else
+            basicProperties{i,1}.segments = str2num(tempSeg);
+        end
     else
         basicProperties{i,1}.segments = [];
     end
@@ -136,8 +156,10 @@ for i=1:length(DATA.allFiles);
     basicProperties{i,1}.namedata = tempName;
     
     tempDATA = DATA.allFiles{i}.rawData;
-    basicProperties{i,1}.sessionDuration = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
-    threshold = 50000;
+        basicProperties{i,1}.sessionDuration = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
+   basicProperties{i,1}.sessionDuration = ((tempDATA(end,rawSessionTime)-tempDATA(1,rawSessionTime))/1000)/60; % Calculate duration of session in minutes
+   basicProperties{i,1}.fileLength = length(tempDATA);
+   threshold = 50000;
     aboveThreshold = find(tempDATA(:,encoder0Pos)>threshold);
     for j = 1:length(aboveThreshold)
         tempDATA(aboveThreshold(j),:)=nan;
@@ -145,6 +167,7 @@ for i=1:length(DATA.allFiles);
     
     totalSteps = nansum(diff(tempDATA(:,1))>0);
     basicProperties{i,1}.totalStepsPerMin = totalSteps/basicProperties{i,1}.sessionDuration; % Calculate running velocity
+    
     
     %Look at raw data to get stats on performance
     findtrialType = diff(DATA.allFiles{i}.rawData(:,trialType));
@@ -182,7 +205,7 @@ for i=1:length(DATA.allFiles);
             MISSangle = sum(tempSegmentData(:,1)==3)+1;
             CRangle = sum(tempSegmentData(:,1)==4)+1;
             basicProperties{i,1}.segmentPerformance(j,1) =  (HITangle+CRangle)/(length(tempSegmentData)+4);
-            basicProperties{i,1}.segmentdPrime(j,1)=norminv(( HITangle/( HITangle+MISSangle)),0,1)-norminv((FAangle/(CRangle)),0,1);
+            basicProperties{i,1}.segmentdPrime(j,1)=norminv(( HITangle/( HITangle+MISSangle)),0,1)-norminv((FAangle/(FAangle+CRangle)),0,1);
             
         end
         
@@ -386,7 +409,7 @@ for k = 1:length(unique_idx)
     elseif length(unique_idx{k})>1
         t = unique_idx{k};
         for kk = 1:length(t)
-            tempRunVal(kk,1) = basicProperties{t(kk)}.sessionDuration;
+            tempRunVal(kk,1) = basicProperties{t(kk)}.fileLength;
         end
         
         [id di] = max(tempRunVal); %find the data set where the mouse ran the most
@@ -739,8 +762,8 @@ if plotON==1
     set(gcf,'name',tempTitle,'numbertitle','off')
     currPlot = 1;
     tn=1;
-    tempdPrime = nan(length(numPoints),1);
-    tempdPerformance = nan(length(numPoints),1);
+    tempdPrime = nan(length(numPoints),2);
+    tempdPerformance = nan(length(numPoints),2);
     
     for h = 1:length(numPoints)
 
@@ -965,8 +988,7 @@ if plotON==1
     numFigs = 1;
     currPlot=1;
     Segtally=1;
-    
-    
+
     if (plotON==1)
         fV = figure;clf
         set(fV,'Position',positionGraph6);
@@ -1009,7 +1031,7 @@ if plotON==1
             subplot(plotRows,plotCols,currPlot);
             plot(basicPropertiesToPlot{h,1}.segmentdPrime,'ok-','LineWidth',5)
             hold on
-            line([1 max(xlim)],[0.5 0.5],'Color','r','LineStyle','--','LineWidth',2)
+            line([1 max(xlim)],[1.7 1.7],'Color','r','LineStyle','--','LineWidth',2)
             % SessionTypes = {'Cntr' ; 'Stim out'; 'Cntr'; 'Stim out'};
             %SessionTypes = {'Block 1' ; 'Stim out'; 'Cntr'; 'Stim out'};
             %NumTicks = length(SessionTypes);
@@ -1030,13 +1052,23 @@ if plotON==1
             title('Performance over blocks','fontWeight','bold');
             xlabel('Block number','fontWeight','bold');
             ylabel('d Prime', 'fontWeight','bold');
+            text(1,ylimit(1)+0.1,basicPropertiesToPlot{h,1}.namedata)
             %set(gca,'XTickLabel',SessionTypes)
-            
+             baseFileName = strcat(tempTitle,num2str(numFigs)); %save old figure
+             saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\segmented',baseFileName),'jpeg');
+numFigs = numFigs+1;
+ currPlot=1;
+  if (plotON==1)
+        fV = figure;clf
+        set(fV,'Position',positionGraph6);
+    else
+        figure('Visible','off');clf;
+    end
         else
             indSeg(h,1)=0;
         end
     end
-    saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\segmented',tempTitle),'jpeg');
+   % saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\segmented',tempTitle),'jpeg');
     
 end
 %
