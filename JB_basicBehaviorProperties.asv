@@ -836,8 +836,8 @@ if plotON==1
     end
     currPlot=1;
     
-   tempdPrime =  tempdPrime(~any(isnan(tempdPrime),2),:);
-   tempdPerformance =  tempdPerformance(~any(isnan(tempdPerformance),2),:);
+   tempdPrime tempdPrime(~any(isnan(tempdPrime),2),:);
+    tempdPerformance(~any(isnan(tempdPerformance),2),:);
     
     if any(tempdPrime)
         
