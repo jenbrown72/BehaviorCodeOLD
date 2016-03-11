@@ -1,11 +1,16 @@
 function [] = JB_basicBehaviorProperties(plotfig)
 
+dprimeChance = [1 1];
+dprimeThreshold = [1 1];
+percentCorrectChance = [0.5 0.5];
+percentCorrectThreshold = [0.7 0.7];
 positionGraph1 = [14   83   503   869];
 positionGraph2 = [602   83   644   869];
 positionGraph3 = [1268   83   644   869];
 positionGraph4 = [32   515   354   438];
 positionGraph5 = [1214  230  580 736];
 positionGraph6 = [602    83   644   869];
+positionGraph7 = [754    78   327   869];
 plotON=1;
 
 if nargin==1;
@@ -544,7 +549,9 @@ if plotON==1
                 addtoLegend=addtoLegend+1;
             end
         end
-        plot([0 max(numPoints)],[0.5 0.5],'k--')
+        
+        plot([0 max(numPoints)],percentCorrectChance,'k--')
+       % plot([0 max(numPoints)],percentCorrectThreshold,'k--')
         ylim([0 1])
         xlim([0 length(numPoints)])
         ylabel('Performance');
@@ -596,7 +603,9 @@ if plotON==1
                 addtoLegend=addtoLegend+1;
             end
         end
-        plot([0 max(numPoints)],[1 1],'k--')
+
+    %    plot([0 max(numPoints)],dprimeChance,'k--')
+         plot([0 max(numPoints)],dprimeThreshold,'k--')
         xlim([0 length(numPoints)])
         ylabel('dprime');
         xlabel('Session Number');
@@ -950,6 +959,7 @@ if plotON==1
         
         subplot(plotRows,plotCols,currPlot);
         plot(tempTrimPerformance,'o-k','LineWidth',5);
+        hold on
         set(gca,'XTick',[1:length(tempTrimPerformance)]);
         set(gca,'XTickLabel',tempTrimWhiskers);
         ylim([0 1]);
@@ -958,10 +968,20 @@ if plotON==1
         xlabel('whisker trimming');
         currPlot=currPlot+1;
         
+
+        plot([1 max(xlim)],percentCorrectChance,'k--','LineWidth',2)
+       %         plot([1 max(xlim)],percentCorrectThreshold,'k--','LineWidth',2)
+
+
+        
         subplot(plotRows,plotCols,currPlot);
         plot(tempTrimdPrime,'o-k','LineWidth',5);
+        hold on
         set(gca,'XTick',[1:length(tempTrimdPrime)]);
         set(gca,'XTickLabel',tempTrimWhiskers);
+            %  plot([1 max(xlim)],dprimeChance,'k--','LineWidth',2)
+                plot([1 max(xlim)],dprimeThreshold,'k--','LineWidth',2)
+
         ylimit = ylim;
         
         if ylimit(1)<0;
@@ -992,7 +1012,7 @@ if plotON==1
 
     if (plotON==1)
         fV = figure;clf
-        set(fV,'Position',positionGraph6);
+        set(fV,'Position',positionGraph7);
     else
         figure('Visible','off');clf;
     end
@@ -1010,12 +1030,15 @@ if plotON==1
     end
     
     
+
     for h = 1:length(numPoints)
         if (indSeg(h,1)==1)
             subplot(plotRows,plotCols,currPlot);
             plot(basicPropertiesToPlot{h,1}.segmentPerformance,'ok-','LineWidth',5)
             hold on
-            line([1 max(xlim)],[0.5 0.5],'Color','r','LineStyle','--','LineWidth',2)
+            
+        plot([1 max(xlim)],percentCorrectChance,'k--','LineWidth',2)
+         %       line([1 max(xlim)],percentCorrectThreshold,'k--','LineWidth',2)
             % SessionTypes = {'Cntr' ; 'Stim out'; 'Cntr'; 'Stim out'};
             %SessionTypes = {'Block 1' ; 'Stim out'; 'Cntr'; 'Stim out'};
             %NumTicks = length(SessionTypes);
@@ -1032,7 +1055,8 @@ if plotON==1
             subplot(plotRows,plotCols,currPlot);
             plot(basicPropertiesToPlot{h,1}.segmentdPrime,'ok-','LineWidth',5)
             hold on
-            line([1 max(xlim)],[1.7 1.7],'Color','r','LineStyle','--','LineWidth',2)
+                %    line([1 max(xlim)],dprimeChance,'k--','LineWidth',2)
+                plot([1 max(xlim)],dprimeThreshold,'k--','LineWidth',2)
             % SessionTypes = {'Cntr' ; 'Stim out'; 'Cntr'; 'Stim out'};
             %SessionTypes = {'Block 1' ; 'Stim out'; 'Cntr'; 'Stim out'};
             %NumTicks = length(SessionTypes);
@@ -1061,7 +1085,7 @@ numFigs = numFigs+1;
  currPlot=1;
   if (plotON==1)
         fV = figure;clf
-        set(fV,'Position',positionGraph6);
+        set(fV,'Position',positionGraph7);
     else
         figure('Visible','off');clf;
     end
@@ -1071,6 +1095,12 @@ numFigs = numFigs+1;
     end
    % saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\segmented',tempTitle),'jpeg');
     
+   
+    if (plotON==1)
+        if currPlot==1
+            close(fV)
+        end
+    end
 end
 %
 % XTickLabel = get(gca,'XTickLabel')
