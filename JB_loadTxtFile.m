@@ -2,8 +2,8 @@ function [newTxtFileCount] = JB_loadTxtFile(MouseID)
 
 % Initialize variables.
 delimiter = ',';
-endRow = 26;
-startRow = 30;
+endRow = 30;
+startRow = 35;
 
 % Read columns of data as strings:
 % For more information, see the TEXTSCAN documentation.
@@ -117,7 +117,7 @@ for i=1:size((D),1);
        % metaData = raw;
         
         %For tempDATA
-        tempDATA = csvread(D(i).name,26,0); % Dont read first line - sometimes contains a string 'A', start from row 26 as the top is metaData
+        tempDATA = csvread(D(i).name,30,0); % Dont read first line - sometimes contains a string 'A', start from row 26 as the top is metaData
         tempDATA(length(tempDATA),:) = []; %Delete the last line incase not fully read
         
         disp(' ')
@@ -146,10 +146,10 @@ for i=1:size((D),1);
         
         %add a 0to the start of file date names so that sort with work later, e.g.
         %7 will be 07.
-        for i = 1:length(tempLocation)-1;
-            if(tempLocation(i+1)-tempLocation(i))==2;
-                startName = tempName(1:tempLocation(i));
-                endName = tempName(tempLocation(i)+1:end);
+        for ii = 1:length(tempLocation)-1;
+            if(tempLocation(ii+1)-tempLocation(ii))==2;
+                startName = tempName(1:tempLocation(ii));
+                endName = tempName(tempLocation(ii)+1:end);
                 tempName = strcat(startName,'0',endName);
                 tempLocation = tempLocation+1;
             end

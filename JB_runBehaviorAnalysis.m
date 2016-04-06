@@ -1,6 +1,13 @@
-function [] = JB_runBehaviorAnalysis
+function [] = JB_runBehaviorAnalysis(figure)
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
+if  nargin==1 
+    
+    plotON = figure;
+else
+    plotON=0;
+end
+
 
 currDirectory = cd;
 dirFolders = dir;
@@ -15,7 +22,7 @@ for h = 1:length(folders) %for each mouse ID folder
     
   if newTxtFileCount>0 %if new files are found, run basic BehaviorProperties
     
-    JB_basicBehaviorProperties(0); %0 dont plot figures, 1 plot figures
+    JB_basicBehaviorProperties(plotON); %0 dont plot figures, 1 plot figures
      
   end
     

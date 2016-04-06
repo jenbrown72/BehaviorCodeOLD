@@ -1,3 +1,5 @@
+
+
 function [] = JB_sortTxtFiles()
 % JB_sortTxtFiles 
 %   Script to sort incoming txt files into their appropriate mouse ID
@@ -25,7 +27,7 @@ for j = 1:length(txtFiles); % go through and extract data
         if (txtFiles(j).bytes == 0) % ignor files with 0 bytes.
             filed=1;
             continue
-        elseif  strncmpi(txtFiles(j).name,'_',1) %ignor files with no name
+        elseif  strncmp(txtFiles(j).name,'_',1) %ignor files with no name
             filed=1;
             continue
         else

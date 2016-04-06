@@ -18,30 +18,32 @@ if nargin==1;
 end
 %%
 load('DATA.mat')
-sessionType = 1;
-basisPropertiesID{sessionType,1} = 'sessionType';
-date = 2;
-basisPropertiesID{date,1} = 'date';
-datenum = 3;
-basisPropertiesID{datenum,1} = 'datenum';
-sessionDuration = 4;
-basisPropertiesID{sessionDuration,1} = 'sessionDuration';
-totalStepsPerMin = 5;
-basisPropertiesID{totalStepsPerMin,1} = 'totalStepsPerMin';
-performance = 6;
-basisPropertiesID{performance,1} = 'performance';
-HIT = 7;
-basisPropertiesID{HIT,1} = 'performanceTypeHIT';
-FA = 8;
-basisPropertiesID{FA,1} = 'performanceTypeFA';
-MISS = 9;
-basisPropertiesID{MISS,1} = 'performanceTypeMISS';
-CR = 10;
-basisPropertiesID{CR,1} = 'performanceTypeCR';
+% sessionType = 1;
+% basisPropertiesID{sessionType,1} = 'sessionType';
+% date = 2;
+% basisPropertiesID{date,1} = 'date';
+% datenum = 3;
+% basisPropertiesID{datenum,1} = 'datenum';
+% sessionDuration = 4;
+% basisPropertiesID{sessionDuration,1} = 'sessionDuration';
+% totalStepsPerMin = 5;
+% basisPropertiesID{totalStepsPerMin,1} = 'totalStepsPerMin';
+% performance = 6;
+% basisPropertiesID{performance,1} = 'performance';
+% HIT = 7;
+% basisPropertiesID{HIT,1} = 'performanceTypeHIT';
+% FA = 8;
+% basisPropertiesID{FA,1} = 'performanceTypeFA';
+% MISS = 9;
+% basisPropertiesID{MISS,1} = 'performanceTypeMISS';
+% CR = 10;
+% basisPropertiesID{CR,1} = 'performanceTypeCR';
+
+
 possibleAngles = [225;241;254;263;266;268;270;272;274;277;284;299;315];
 
-startAngleID = 10;
-basisPropertiesID{startAngleID,1} = 'anglePerformanceHIT';
+% startAngleID = 10;
+% basisPropertiesID{startAngleID,1} = 'anglePerformanceHIT';
 % FAangle = 12;
 % basisPropertiesID{FAangle,1} = 'anglePerformanceFA';
 % MISSangle = 13;
@@ -290,7 +292,7 @@ for i=1:length(DATA.allFiles);
         
     end
     
-    basisPropertiesID{startAngleID,1};
+  %  basisPropertiesID{startAngleID,1};
     
     %Calculate how many of each trial type there were
     basicProperties{i,1}.HIT = sum(temptrialTypes==1)+1; %HitTrialCount
@@ -386,7 +388,7 @@ for i=1:length(DATA.allFiles);
     %Define session type
     tempsessionType = strcat('S',num2str(length(tempAngles)));
     basicProperties{i,1}.stimNumber = length(tempAngles);
-    if autoSession==1
+    if autoSession=='1'
         tempsessionType = strcat(tempsessionType,'auto');
         basicProperties{i,1}.stimNumber = 0;
     end
@@ -424,7 +426,9 @@ for k = 1:length(unique_idx)
 end
 %%
 
-if plotON==1
+JB_plotPerformance(DATA,basicPropertiesToPlot,positionGraph1,plotON) 
+
+%if plotON==1
     
     if (plotON==1)
         f = figure;clf
@@ -501,6 +505,7 @@ if plotON==1
             plot(numPoints(j),colorCode(j,1),'*y','MarkerSize', 5)
         end
     end
+    set(gca,'YTick',[1:length(SessionTypes)]);
     set(gca,'YTickLabel',SessionTypes)
     ylabel('Session Type');
     xlabel('Session Number');
@@ -1001,7 +1006,7 @@ if plotON==1
         
         saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\trimming',tempTitle),'jpeg');
         
-    end
+    %end
     
     
     plotRows = 2;
