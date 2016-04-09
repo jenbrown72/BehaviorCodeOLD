@@ -1,4 +1,4 @@
-function [basicPropertiesToPlot] = JB_basicBehaviorPropertiesNeat(plotfig)
+function [basicPropertiesToPlot possibleAngles] = JB_basicBehaviorPropertiesNeat(plotfig)
 
 if nargin==1;
     plotON = plotfig;
@@ -361,7 +361,10 @@ end
 %delete empty cells
 basicPropertiesToPlot(any(cellfun(@isempty,basicPropertiesToPlot),2),:)=[];
 %%
-% JB_plotPerformance(basicPropertiesToPlot,plotON)
+JB_plotPerformance(basicPropertiesToPlot,1)
+% JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
+% 
+
 % [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,0,1,1);
 % %JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plotON)
 % JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,plotON)

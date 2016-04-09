@@ -27,10 +27,11 @@ end
 %take the two last sessions before trimming for baseline
 firstIndTrim = find(indTrim,1);
 
-DATAtrim.tempTrimPerformance = nan(length(numPoints),1);
-DATAtrim.tempTrimdPrime = nan(length(numPoints),1);
-DATAtrim.tempTrimWhiskers = cell(length(numPoints),1);
-clear DATAtrim.tempTrimAnglesdPrime DATAtrim.tempTrimAnglesDiff
+DATAtrim.performanceAll = nan(length(numPoints),1);
+DATAtrim.dPrimeAll = nan(length(numPoints),1);
+DATAtrim.whiskerIDAll = cell(length(numPoints),1);
+clear DATAtrim.pairedAnglesdPrime DATAtrim.pairedAnglesDiff
+
 if ~isempty(firstIndTrim)
     disp(' ');
     if (strcmp(basicPropertiesToPlot{firstIndTrim,1}.trimType,'Row'))
@@ -44,19 +45,19 @@ if ~isempty(firstIndTrim)
     
     for h=1:length(numPoints)
         if h==firstIndTrim-1 || h==firstIndTrim-2
-            DATAtrim.tempTrimPerformance(trimtally,1) = basicPropertiesToPlot{h,1}.sessionperformance;
-            DATAtrim.tempTrimdPrime(trimtally,1) = basicPropertiesToPlot{h,1}.dprime;
-            DATAtrim.tempTrimWhiskers{trimtally,1} = 'Full';
-            DATAtrim.tempTrimAnglesdPrime(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDprime;
-            DATAtrim.tempTrimAnglesDiff(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDiff;
+            DATAtrim.performanceAll(trimtally,1) = basicPropertiesToPlot{h,1}.sessionperformance;
+            DATAtrim.dPrimeAll(trimtally,1) = basicPropertiesToPlot{h,1}.dprime;
+            DATAtrim.whiskerIDAll{trimtally,1} = 'Full';
+            DATAtrim.pairedAnglesdPrime(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDprime;
+            DATAtrim.pairedAnglesDiff(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDiff;
             trimtally = trimtally+1;
             
         elseif indTrim(h,1)==1
-            DATAtrim.tempTrimPerformance(trimtally,1) = basicPropertiesToPlot{h,1}.sessionperformance;
-            DATAtrim.tempTrimdPrime(trimtally,1) = basicPropertiesToPlot{h,1}.dprime;
-            DATAtrim.tempTrimWhiskers{trimtally,1} = basicPropertiesToPlot{h,1}.trimming;
-            DATAtrim.tempTrimAnglesdPrime(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDprime;
-            DATAtrim.tempTrimAnglesDiff(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDiff;
+            DATAtrim.performanceAll(trimtally,1) = basicPropertiesToPlot{h,1}.sessionperformance;
+            DATAtrim.dPrimeAll(trimtally,1) = basicPropertiesToPlot{h,1}.dprime;
+            DATAtrim.whiskerIDAll{trimtally,1} = basicPropertiesToPlot{h,1}.trimming;
+            DATAtrim.pairedAnglesdPrime(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDprime;
+            DATAtrim.pairedAnglesDiff(trimtally,:) = basicPropertiesToPlot{h,1}.pairsDiff;
             trimtally = trimtally+1;
         end
     end
@@ -64,37 +65,58 @@ end
 
 
 %delete empty cells
-DATAtrim.tempTrimWhiskers(any(cellfun(@isempty,DATAtrim.tempTrimWhiskers),2),:)=[];
-cell_A = strrep(DATAtrim.tempTrimWhiskers,' ','');
+DATAtrim.performanceAll(isnan(DATAtrim.performanceAll))=[];
+DATAtrim.dPrimeAll(isnan(DATAtrim.dPrimeAll))=[];
+DATAtrim.whiskerIDAll(any(cellfun(@isempty,DATAtrim.whiskerIDAll),2),:)=[];
 
+cell_A = strrep(DATAtrim.whiskerIDAll,' ','');
 list=1;
-DATAtrim.PairType = cell(length(numPoints),1);
-DATAtrim.Performance = nan(length(numPoints),2);
-DATAtrim.dPrime = nan(length(numPoints),2);
+DATAtrim.whiskerID = cell(length(numPoints),1);
+DATAtrim.performance = nan(length(numPoints),5);
+DATAtrim.dPrime = nan(length(numPoints),5);
 
-%Find pairs of stim types
-for k = 1:length(cell_A)-1;
-    if (None==0)
-        if(strcmp(cell_A{k},'None'));
-            continue
-        end
-    end
-    
-    if (strcmp(cell_A{k},cell_A{k+1}))
-        DATAtrim.PairType{list} = cell_A{k};
-        DATAtrim.Performance(list,:) = [DATAtrim.tempTrimPerformance(k), DATAtrim.tempTrimPerformance(k+1)];
-        DATAtrim.dPrime(list,:) = [DATAtrim.tempTrimdPrime(k), DATAtrim.tempTrimdPrime(k+1)];
-        list = list+1;
-    end
+for jj = 1:size((DATAtrim.pairedAnglesdPrime),2);
+    tempName = ['anglesdPrime',num2str(DATAtrim.pairedAnglesDiff(1,jj))];
+    angleName{jj} = tempName;
+    DATAtrim.(tempName) = nan(length(numPoints),5);
 end
 
-DATAtrim.PairType(any(cellfun(@isempty,DATAtrim.PairType),2),:)=[];
-DATAtrim.Performance = DATAtrim.Performance(~any(isnan(DATAtrim.Performance),2),:);
-DATAtrim.dPrime = DATAtrim.dPrime(~any(isnan(DATAtrim.dPrime),2),:);
+%Find repeats of stim types
+
+uniqueSessionID = unique(cell_A,'stable');
+
+for kk = 1:length(uniqueSessionID);
+    
+    [matchID] = strcmp(cell_A,uniqueSessionID(kk));
+    if any(matchID) %if there was a hit
+        DATAtrim.whiskerID{list} = uniqueSessionID{kk};
+        idx = find(matchID); %find the indics of the matches
+        DATAtrim.performance(list,1:length(idx)) = DATAtrim.performanceAll(idx)';
+        DATAtrim.dPrime(list,1:length(idx)) = DATAtrim.dPrimeAll(idx)';
+    end
+    
+    for jj = 1:size((DATAtrim.pairedAnglesdPrime),2);
+        DATAtrim.(angleName{jj})(list,1:length(idx)) = DATAtrim.pairedAnglesdPrime(idx,jj)';
+    end
+    list = list+1;
+end
+
+DATAtrim.performance(~any(~isnan(DATAtrim.performance),2),:) = [];%remove rows with nan
+DATAtrim.dPrime(~any(~isnan(DATAtrim.dPrime),2),:) = []; %remove rows with nan
+
+
+% DATAtrim.performance(:,any(isnan(DATAtrim.performance),1))=[]; %remove columns with nan
+% DATAtrim.dPrime(:,any(isnan(DATAtrim.dPrime),1))=[]; %remove columns with nan
+DATAtrim.whiskerID(any(cellfun(@isempty,DATAtrim.whiskerID),2),:)=[];
+
+for jj = 1:size((DATAtrim.pairedAnglesdPrime),2);
+    DATAtrim.(angleName{jj})(~any(~isnan(DATAtrim.(angleName{jj})),2),:) = [];
+    %     DATAtrim.(angleName{jj})(:,any(isnan(DATAtrim.(angleName{jj})),1))=[]; %remove columns with nan
+end
 
 % sigPairs = cell;
 clear sigPairs sigPairsPval h p tessting
-testing = DATAtrim.Performance';
+testing = DATAtrim.performance';
 k=1;
 %h = nan(length(testing)
 
@@ -124,22 +146,26 @@ tempTitle = strcat(tempTitle,'_PerformanceTrimming');
 set(gcf,'name',tempTitle,'numbertitle','off')
 currPlot = 1;
 
-%plot avergae of each pair.
-subplot(plotRows,plotCols,currPlot);
-bar(mean(DATAtrim.Performance,2), 0.5);
-hold on
-errorbar(mean(DATAtrim.Performance,2),std(DATAtrim.Performance,0,2),'.');
-%sigstar(sigPairs,sigPairsPval);
-set(gca,'XTickLabel',DATAtrim.PairType);
-ylabel('average Performance')
-currPlot=currPlot+1;
-
 %plot just the first occurance of the pair
 subplot(plotRows,plotCols,currPlot);
-bar(DATAtrim.Performance(:,1), 0.5);
+bar(DATAtrim.performance(:,1), 0.5);
 hold on
-set(gca,'XTickLabel',DATAtrim.PairType);
+set(gca,'XTickLabel',DATAtrim.whiskerID);
 ylabel('First Session Performance')
+currPlot=currPlot+1;
+
+
+%plot avergae of each pair.
+%calculate the min number of observations per data point
+minNoDATApoints = min(sum(~isnan(DATAtrim.dPrime),2));
+
+subplot(plotRows,plotCols,currPlot);
+bar(nanmean(DATAtrim.performance(:,1:minNoDATApoints),2), 0.5);
+hold on
+errorbar(nanmean(DATAtrim.performance,2),nanstd(DATAtrim.performance(:,1:minNoDATApoints),0,2),'.');
+%sigstar(sigPairs,sigPairsPval);
+set(gca,'XTickLabel',DATAtrim.whiskerID);
+ylabel('average Performance')
 currPlot=currPlot+1;
 
 
@@ -157,17 +183,17 @@ for kk = 1+1:length(testing)
 end
 
 subplot(plotRows,plotCols,currPlot);
-bar(mean(DATAtrim.dPrime,2), 0.5);
+bar(nanmean(DATAtrim.dPrime(:,1:minNoDATApoints),2), 0.5);
 hold on
-errorbar(mean(DATAtrim.dPrime,2),std(DATAtrim.dPrime,0,2),'.');
+errorbar(nanmean(DATAtrim.dPrime(:,1:minNoDATApoints),2),nanstd(DATAtrim.dPrime(:,1:minNoDATApoints),0,2),'.');
 %sigstar(sigPairs,sigPairsPval);
-set(gca,'XTickLabel',DATAtrim.PairType);
+set(gca,'XTickLabel',DATAtrim.whiskerID);
 ylabel('average dPrime')
 currPlot=currPlot+1;
 
 subplot(plotRows,plotCols,currPlot);
-bar(DATAtrim.Performance(:,1), 0.5);
-set(gca,'XTickLabel',DATAtrim.PairType);
+bar(DATAtrim.performance(:,1), 0.5);
+set(gca,'XTickLabel',DATAtrim.whiskerID);
 ylabel('First Session dPrime')
 hold on
 
@@ -191,10 +217,10 @@ set(gcf,'name',tempTitle,'numbertitle','off')
 currPlot = 1;
 
 subplot(plotRows,plotCols,currPlot);
-plot(DATAtrim.tempTrimPerformance,'o-k','LineWidth',5);
+plot(DATAtrim.performanceAll,'o-k','LineWidth',5);
 hold on
-set(gca,'XTick',[1:length(DATAtrim.tempTrimPerformance)]);
-set(gca,'XTickLabel',DATAtrim.tempTrimWhiskers);
+set(gca,'XTick',[1:length(DATAtrim.performanceAll)]);
+set(gca,'XTickLabel',DATAtrim.whiskerIDAll);
 ylim([0 1]);
 set(gca, 'Ylim',[0 1])
 ylabel('Performance');
@@ -203,10 +229,10 @@ currPlot=currPlot+1;
 plot([1 max(xlim)],percentCorrectChance,'k--','LineWidth',2)
 
 subplot(plotRows,plotCols,currPlot);
-plot(DATAtrim.tempTrimdPrime,'o-k','LineWidth',5);
+plot(DATAtrim.dPrimeAll,'o-k','LineWidth',5);
 hold on
-set(gca,'XTick',[1:length(DATAtrim.tempTrimdPrime)]);
-set(gca,'XTickLabel',DATAtrim.tempTrimWhiskers);
+set(gca,'XTick',[1:length(DATAtrim.dPrimeAll)]);
+set(gca,'XTickLabel',DATAtrim.whiskerIDAll);
 plot([1 max(xlim)],dprimeThreshold,'k--','LineWidth',2)
 ylimit = ylim;
 
@@ -216,19 +242,17 @@ else
     yLimitSet = 0;
 end
 ylim([yLimitSet ylimit(2)]);
-set(gca, 'Ylim',[yLimitSet max(DATAtrim.tempTrimdPrime)])
+set(gca, 'Ylim',[yLimitSet max(DATAtrim.dPrimeAll)])
 ylabel('d prime');
 xlabel('whisker trimming');
 currPlot=currPlot+1;
 
 saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\trimming',tempTitle),'jpeg');
-
-
 %Plot dprime over angles
 %delete empty cells
 
 plotRows = 3;
-plotCols = size((DATAtrim.tempTrimAnglesdPrime),2);
+plotCols = size((DATAtrim.pairedAnglesdPrime),2);
 plotTally = (plotRows*plotCols);
 numFigs = 1;
 
@@ -248,24 +272,24 @@ currPlot = 1;
 subplot(plotRows,plotCols,currPlot:(plotCols*2));
 
 currPlot = (plotCols*2)+1;
-for jj = 1:size((DATAtrim.tempTrimAnglesdPrime),2);
-    plot(DATAtrim.tempTrimAnglesdPrime(:,jj),'o-','LineWidth',5,'Color',[0,1/(jj),1/(jj)]);
-    templegend{jj} = ['diffAngle ',num2str(DATAtrim.tempTrimAnglesDiff(1,jj))];
+for jj = 1:size((DATAtrim.pairedAnglesdPrime),2);
+    plot(DATAtrim.pairedAnglesdPrime(:,jj),'o-','LineWidth',5,'Color',[0,1/(jj),1/(jj)]);
+    templegend{jj} = ['diffAngle ',num2str(DATAtrim.pairedAnglesDiff(1,jj))];
     hold on
 end
 legend(templegend)
 
-set(gca,'XTick',(1:length(DATAtrim.tempTrimAnglesdPrime)));
-set(gca,'XTickLabel',DATAtrim.tempTrimWhiskers);
+set(gca,'XTick',(1:length(DATAtrim.pairedAnglesdPrime)));
+set(gca,'XTickLabel',DATAtrim.whiskerIDAll);
 
-maxY = max(DATAtrim.tempTrimAnglesdPrime(:));
-minY = min(DATAtrim.tempTrimAnglesdPrime(:));
-for jj = 1:size((DATAtrim.tempTrimAnglesdPrime),2);
+maxY = max(DATAtrim.pairedAnglesdPrime(:));
+minY = min(DATAtrim.pairedAnglesdPrime(:));
+for jj = 1:size((DATAtrim.pairedAnglesdPrime),2);
     subplot(plotRows,plotCols,currPlot);
-    plot(DATAtrim.tempTrimAnglesdPrime(:,jj),'o-','LineWidth',5,'Color',[0,1/(jj),1/(jj)]);
+    plot(DATAtrim.pairedAnglesdPrime(:,jj),'o-','LineWidth',5,'Color',[0,1/(jj),1/(jj)]);
     hold on
-    set(gca,'XTick',[1:length(DATAtrim.tempTrimAnglesdPrime)]);
-    set(gca,'XTickLabel',DATAtrim.tempTrimWhiskers);
+    set(gca,'XTick',[1:length(DATAtrim.pairedAnglesdPrime)]);
+    set(gca,'XTickLabel',DATAtrim.whiskerIDAll);
     currPlot = currPlot+1;
     set(gca,'Ylim',[minY maxY]);
     xlimit = xlim;

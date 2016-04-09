@@ -99,6 +99,10 @@ percentCorrectThreshold = [0.7 0.7];
     legendTab = [];
     for jj = 1:length(numPoints);
         
+            
+    X = ['Date ', basicPropertiesToPlot{jj,1}.date(1:11), ' Session ', basicPropertiesToPlot{jj,1}.sessionType, ' Performance ', num2str( basicPropertiesToPlot{jj,1}.sessionperformance), ' dPrime ', num2str(basicPropertiesToPlot{jj,1}.dprime)];
+    disp(X)
+        
         if waterSchedule(jj)==1;
             circle1 = plot(numPoints(jj),basicPropertiesToPlot{jj,1}.sessionperformance,'o','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0,0,waterSchedule(jj)], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
             hold on
@@ -193,8 +197,8 @@ percentCorrectThreshold = [0.7 0.7];
         ylabel('dprime');
         xlabel('Session Number');
     end
-    
-    
+
+
     if(length(legendAdd))>0
         hLL = legend([legendAdd(1:length(legendAdd))], legendTab{:});
         newPosition = [0 0 0.2 0.1];

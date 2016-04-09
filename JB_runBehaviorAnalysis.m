@@ -1,9 +1,8 @@
-function [] = JB_runBehaviorAnalysis(figure)
+function [] = JB_runBehaviorAnalysis(plotON)
 %UNTITLED4 Summary of this function goes here
 %   Detailed explanation goes here
 if  nargin==1 
-    
-    plotON = figure;
+    plotON = plotON;
 else
     plotON=0;
 end
@@ -21,11 +20,11 @@ for h = 1:length(folders) %for each mouse ID folder
     [newTxtFileCount] = JB_loadTxtFile; %run load all txt files, will only upload new files
     
   if newTxtFileCount>0 %if new files are found, run basic BehaviorProperties
-    
-    JB_basicBehaviorProperties(plotON); %0 dont plot figures, 1 plot figures
-     
+      
+   JB_basicBehaviorPropertiesNeat(plotON)
+         
   end
-    
-currDirectory;
+  
+cd(currDirectory);
 end
 
