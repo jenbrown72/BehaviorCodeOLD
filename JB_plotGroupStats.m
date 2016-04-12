@@ -19,8 +19,7 @@ else
 end
 
 for i = 1:length(analysedDATA{1}.parameter);
-    
-        
+
     tempTitle = ['AverageData', ' ', 'Norm', num2str(normdata),' ', 'Diff', num2str(diffdata)];
     set(gcf,'name',tempTitle,'numbertitle','off')
     
@@ -38,10 +37,19 @@ for i = 1:length(analysedDATA{1}.parameter);
 
     if (diffdata==1)
           for ff = 1:size((data),2)
-            data{ff} = diff(data{ff});
+                for ffg = 1:size((data{ff}),2)
+              for fg = 1:size((data{ff}),1)-1
+                
+                      
+            tempdata{ff}(fg,ffg)           = diff([data{ff}(1,ffg) data{ff}(fg+1,ffg)]);
+          %  data{ff}(fg,ffg) = diff([data{ff}(1,ffg) data{ff}(fg+1,ffg)]);
+                  end
+              end
           end
-        Labels = {'Full:R/C', 'R/C:double','double:single','single:None'};
+          
+        Labels = {'Full:R/C', 'Full:double','Full:single','Full:None'};
     end
+    data = tempdata;
     
     k=1;
     clear p h temp x sigPairsPval sigPairs;

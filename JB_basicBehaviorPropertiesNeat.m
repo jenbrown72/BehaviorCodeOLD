@@ -1,15 +1,28 @@
-function [basicPropertiesToPlot possibleAngles] = JB_basicBehaviorPropertiesNeat(plotfig)
+function [basicPropertiesToPlot possibleAngles] = JB_basicBehaviorPropertiesNeat(plotON,checkIndividualPlots,cleanUp)
 
-if nargin==1;
-    plotON = plotfig;
+%plotON =1, plot fig/ =0 no plot
+%cleanUp = 1: stop analysis of session early if critiria is reached:
+
+if nargin <3;
+    cleanUp=0;
 end
-%%
+
+if nargin <2;
+    checkIndividualPlots=0;
+end
+
+
+% analysis stop early criteria
+stopExThreshold = 32; % no of consequtive misses and correct rejections to say the mouse wasn't engaged and stop analysis
+minNoTrials = 0;
+
 load('DATA.mat')
-plotON=1;
 possibleAngles = [225;241;254;263;266;268;270;272;274;277;284;299;315];
 basicProperties = cell(100,1);
 %define which txt file column the different digital inputs are read in from
 %processing
+
+positionGraph1 = [1555 293 343 702];
 
 encoder0Pos = 1;
 LEDstate = 5;
@@ -85,13 +98,11 @@ for i=1:length(DATA.allFiles);
         tempTrim = metaData{trimIdx,2};
         basicProperties{i,1}.trimming = tempTrim;
         trimPattern = {basicProperties{i,1}.trimming};
-
-        countTrim = strfind(trimPattern,'C');
         
+        countTrim = strfind(trimPattern,'C');
         if length(countTrim{1})==4; %this is a row data)
             basicProperties{i,1}.trimType = 'Row';
         end
-        
     else
         basicProperties{i,1}.trimming = [];
     end
@@ -123,6 +134,68 @@ for i=1:length(DATA.allFiles);
     %Look at raw data to get stats on performance
     [idx, ~] = find(diff(DATA.allFiles{i}.rawData(:,trialType))>0);
     temptrialTypes = DATA.allFiles{i}.rawData(idx+2,trialType);
+    
+    %plot the session performance
+    if ~isempty(temptrialTypes)
+        if (exist('checkIndividualPlots','var') && checkIndividualPlots==1)
+            f = figure;clf
+            set(f,'Position',positionGraph1);
+        else
+            figure('Visible','off');clf;
+        end
+        
+        for kk=1:length(temptrialTypes)
+            if temptrialTypes(kk)==1; % Hit
+                line([0 1], [kk kk], 'Color', 'g','LineWidth',2);
+                hold on;
+            elseif temptrialTypes(kk)==3; % No Lick on GO stimulus = Miss
+                line([0 1], [kk kk], 'Color', 'r','LineWidth',2);
+                hold on;
+            elseif temptrialTypes(kk)==4; % No Lick on Distractor stimulus = Correct Rejection
+                line([2 3], [kk kk], 'Color', 'g','LineWidth',2);
+                hold on;
+            elseif temptrialTypes(kk)==2; % Lick on Distractor stimulus = False Alarm
+                line([2 3], [kk kk], 'Color', 'r','LineWidth',2);
+                hold on;
+            end
+        end
+        
+        xlim([-0.5 3.5])
+     %   ylim([1 length(temptrialTypes)])
+        set(gca,'YDir','reverse');
+        
+        %find how many consequtive trials with no lick there were
+        ff = (temptrialTypes==3) | (temptrialTypes==4); %miss and correct rejection
+        noresponseCount = diff(find(~(ff==1)));
+        tempCum = 1;
+        idxStop = [];
+        if ~isempty(ff)
+            cumCount = nan(length(ff),1);
+            for v = 1:length(ff)-1
+                if (ff(v) && ff(v+1)) ==1;
+                    tempCum = tempCum+1;
+                else
+                    tempCum = 1;
+                end
+                cumCount(v,1) = tempCum;
+            end
+            idxStop = (find(cumCount>stopExThreshold));
+            if ~isempty(idxStop) && (cleanUp == 1)
+                stopIdx = idxStop(1)-stopExThreshold;
+                if stopIdx>minNoTrials
+                    X = ['Date ', basicProperties{i,1}.date(1:11), ' Stopping Session Analysis Early By', num2str(length(idx)- stopIdx), 'Trials', 'On trial No.', num2str(stopIdx),'Out Of',num2str(length(idx))] ;
+                    line([xlim], [stopIdx stopIdx], 'Color', 'k','LineWidth',2);
+                    idx(stopIdx:end)=[];
+                    disp(X)
+                end
+            end
+        end
+        if (checkIndividualPlots==1)
+        waitforbuttonpress;
+        end
+    end
+    
+    temptrialTypes = DATA.allFiles{i}.rawData(idx+2,trialType);
     tempCount = DATA.allFiles{i}.rawData(idx,count);
     tempAngleTypes = DATA.allFiles{i}.rawData(idx+2,angle);
     tempRewardDuration = DATA.allFiles{i}.rawData(idx+2,rewardDuration);
@@ -142,9 +215,7 @@ for i=1:length(DATA.allFiles);
             [Hit, FA, Miss,CR, performance, licking, dprime] = JB_countTrialTypes(tempSegmentData);
             basicProperties{i,1}.segmentPerformance(j,1) =  performance;
             basicProperties{i,1}.segmentdPrime(j,1) = dprime;
-            
         end
-        
     else
         basicProperties{i,1}.segmentPerformance = [];
         basicProperties{i,1}.segmentdPrime = [];
@@ -162,7 +233,6 @@ for i=1:length(DATA.allFiles);
         basicProperties{i,1}.performance{kk} =  performance;
         basicProperties{i,1}.probLicking{kk} =  licking;
         basicProperties{i,1}.trialTypesAngle{:,kk} = performanceAngleTemp;
-        
         basicProperties{i,1}.performanceSTIM{kk} = nan;
         basicProperties{i,1}.probLickingSTIM{kk} = nan;
         basicProperties{i,1}.trialTypesAngleSTIM{kk} = nan;
@@ -173,7 +243,6 @@ for i=1:length(DATA.allFiles);
         if ~isempty(idxAngles) %if this angle was used
             performanceAngleTempSTIM = nan;
             performanceAngleTempNoSTIM = nan;
-            
             if basicProperties{i,1}.optogenetics==1 %if optogenetics was used calculate performance with and without stim
                 for ff = 1:length(idxAngles)
                     if (tempOptogenetics(idxAngles(ff))==1)
@@ -194,19 +263,15 @@ for i=1:length(DATA.allFiles);
                 basicProperties{i,1}.trialTypesAngleNoSTIM{:,kk} = performanceAngleTempNoSTIM;
                 basicProperties{i,1}.performanceNoSTIM{kk} =  performance;
                 basicProperties{i,1}.probLickingNoSTIM{kk} =  licking;
-                
             end
-            
         end
     end
     
     %Find angle pairs
     
     for d = 1:(floor(length(possibleAngles)/2));
-        
         pair1 = basicProperties{i,1}.trialTypesAngle{1,(1+d-1)};
         pair2 = basicProperties{i,1}.trialTypesAngle{1,end-(d-1)};
-        
         if (~isempty(pair1) || ~isempty(pair2))
             %find which was the go and nogo
             if any(pair1==1) || any(pair1==3) %pair 1 go stim
@@ -216,12 +281,10 @@ for i=1:length(DATA.allFiles);
                 [Hit, ~, Miss,~, ~, ~, ~] = JB_countTrialTypes(pair2);
                 [~, FA, ~,CR, ~, ~, ~] = JB_countTrialTypes(pair1);
             end
-            
             basicProperties{i,1}.pairsDprime(d,1) =  JB_dPrime(Hit,Miss,CR, FA);
         else
             basicProperties{i,1}.pairsDprime(d,1) =  NaN;
         end
-        
         pair1 = basicProperties{i,1}.trialTypesAngleSTIM{1,(1+d-1)};
         pair2 = basicProperties{i,1}.trialTypesAngleSTIM{1,end-(d-1)};
         if (~isempty(pair1) || ~isempty(pair2))
@@ -233,12 +296,10 @@ for i=1:length(DATA.allFiles);
                 [Hit, ~, Miss,~, ~, ~, ~] = JB_countTrialTypes(pair2);
                 [~, FA, ~,CR, ~, ~, ~] = JB_countTrialTypes(pair1);
             end
-            
             basicProperties{i,1}.pairsDprimeSTIM(d,1) =  JB_dPrime(Hit,Miss,CR, FA);
         else
             basicProperties{i,1}.pairsDprimeSTIM(d,1) =  NaN;
         end
-        
         pair1 = basicProperties{i,1}.trialTypesAngleNoSTIM{1,(1+d-1)};
         pair2 = basicProperties{i,1}.trialTypesAngleNoSTIM{1,end-(d-1)};
         if (~isempty(pair1) || ~isempty(pair2))
@@ -261,10 +322,8 @@ for i=1:length(DATA.allFiles);
     basicProperties{i,1}.pairsDprimeSTIM(isnan(basicProperties{i,1}.pairsDprimeSTIM(:,1)),:)=[];
     basicProperties{i,1}.pairsDprime(isnan(basicProperties{i,1}.pairsDprime(:,1)),:)=[];
     
-    
     %Calculate how many of each trial type there were
-    [Hit, FA, Miss,CR, performance, licking, dprime] = JB_countTrialTypes(temptrialTypes);
-    
+    [Hit, FA, Miss,CR, performance, licking, dprime] = JB_countTrialTypes(temptrialTypes); 
     basicProperties{i,1}.HIT = Hit; %HitTrialCount
     basicProperties{i,1}.FA = FA; % FATrialCount
     basicProperties{i,1}.MISS = Miss; %MissTrialCount
@@ -273,7 +332,6 @@ for i=1:length(DATA.allFiles);
     basicProperties{i,1}.dprime=dprime;
     
     %now look at optogenetic sessions
-    
     if (basicProperties{i,1}.optogenetics==1)
         basicProperties{i,1}.HITStim = sum((temptrialTypes==1)&(tempOptogenetics==1))+1; %HitTrialCount
         basicProperties{i,1}.FAStim = sum((temptrialTypes==2)&(tempOptogenetics==1))+1; % FATrialCount
@@ -298,7 +356,6 @@ for i=1:length(DATA.allFiles);
     
     match = strcmp('Orientation Selected = ', metaData(:,1));
     clear ind
-    %  if iscell(metaData(match,2))==1
     
     for kk=1:length(match)
         if match(kk,1)==1;
@@ -336,7 +393,6 @@ for k = 1:length(basicProperties),
 end
 
 plotNumber = 1;
-
 [~,~,idx] = unique(days(:,1));
 idx = sort(idx);
 unique_idx = accumarray(idx(:),(1:length(idx))',[],@(x) {sort(x)});
@@ -363,13 +419,13 @@ basicPropertiesToPlot(any(cellfun(@isempty,basicPropertiesToPlot),2),:)=[];
 %%
 JB_plotPerformance(basicPropertiesToPlot,1)
 % JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
-% 
+%
 
 % [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,0,1,1);
 % %JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plotON)
 % JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,plotON)
 % JB_plotTrimming(basicPropertiesToPlot, plotON)
 % JB_plotSegments(basicPropertiesToPlot,plotON)
-% 
+%
 
 end
