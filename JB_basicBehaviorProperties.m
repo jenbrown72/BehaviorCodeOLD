@@ -1,4 +1,4 @@
-function [basicPropertiesToPlot possibleAngles] = JB_basicBehaviorPropertiesNeat(plotON,checkIndividualPlots,cleanUp)
+function [basicPropertiesToPlot possibleAngles] = JB_basicBehaviorProperties(plotON,checkIndividualPlots,cleanUp)
 
 %plotON =1, plot fig/ =0 no plot
 %cleanUp = 1: stop analysis of session early if critiria is reached:
