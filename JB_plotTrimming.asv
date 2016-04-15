@@ -6,7 +6,7 @@ function [DATAtrim] = JB_plotTrimming(basicPropertiesToPlot, plotON, None)
 %None = 1, include no whiskers in plots, 0 = exclude no whiskers
 
 positionGraph1 = [897   382   422   614];
-positionGraph2 = [1097         383         628         613];
+positionGraph2 = [1321 383 404 613];
 positionGraph3 = [7   385   888   611];
 
 percentCorrectChance = [0.5 0.5];
@@ -105,7 +105,7 @@ DATAtrim.performance(~any(~isnan(DATAtrim.performance),2),:) = [];%remove rows w
 DATAtrim.dPrime(~any(~isnan(DATAtrim.dPrime),2),:) = []; %remove rows with nan
 
         if (None==1)
-            idx = find(strcmp(DATAtrim.whiskerID,'None'));
+            idx = find(strcmp(DATAtrim.whiskerID,'None'))
             DATAtrim.performance(idx,:) = [];
             DATAtrim.dPrime(idx,:) = [];
         end
@@ -177,23 +177,14 @@ testing = DATAtrim.dPrime';
 k=1;
 clear h p sigPairs sigPairsPval
 
-for kk = 1:size((testing),2)-1
-    [h(kk),p(kk)] = ttest(testing(:,1),testing(:,kk+1));
+for kk = 1+1:size((testing),2)
+    [h(kk),p(kk)] = ttest(testing(:,1),testing(:,kk));
     if h(kk)==1
-        sigPairs{k} = [1,kk+1];
+        sigPairs{k} = [1,kk];
         sigPairsPval(k) = [p(kk)];
         k = k+1;
     end
 end
-
-
-subplot(plotRows,plotCols,currPlot);
-bar(DATAtrim.performance(:,1), 0.5);
-set(gca,'XTickLabel',DATAtrim.whiskerID);
-ylabel('First Session dPrime')
-hold on
-currPlot=currPlot+1;
-
 
 subplot(plotRows,plotCols,currPlot);
 bar(nanmean(DATAtrim.dPrime(:,1:minNoDATApoints),2), 0.5);
@@ -204,6 +195,11 @@ set(gca,'XTickLabel',DATAtrim.whiskerID);
 ylabel('average dPrime')
 currPlot=currPlot+1;
 
+subplot(plotRows,plotCols,currPlot);
+bar(DATAtrim.performance(:,1), 0.5);
+set(gca,'XTickLabel',DATAtrim.whiskerID);
+ylabel('First Session dPrime')
+hold on
 
 %plot performance and d prime over session
 

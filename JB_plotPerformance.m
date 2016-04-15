@@ -99,7 +99,6 @@ percentCorrectThreshold = [0.7 0.7];
     legendTab = [];
     for jj = 1:length(numPoints);
         
-            
     X = ['Date ', basicPropertiesToPlot{jj,1}.date(1:11), ' Session ', basicPropertiesToPlot{jj,1}.sessionType, ' Performance ', num2str( basicPropertiesToPlot{jj,1}.sessionperformance), ' dPrime ', num2str(basicPropertiesToPlot{jj,1}.dprime)];
     disp(X)
         

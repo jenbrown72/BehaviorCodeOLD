@@ -21,7 +21,7 @@ for h = 1:length(folders) %for each mouse ID folder
     
   if newTxtFileCount>0 %if new files are found, run basic BehaviorProperties
       
-   JB_basicBehaviorPropertiesNeat(plotON)
+   JB_basicBehaviorProperties(0)
          
   end
   

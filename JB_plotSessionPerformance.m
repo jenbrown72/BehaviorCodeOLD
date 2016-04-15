@@ -142,9 +142,6 @@ function [] = JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plo
                 saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\psychometricCurves',baseFileName),'jpeg');
             end
         end
-        
     end
-
-
 end
 
