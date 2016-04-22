@@ -51,6 +51,9 @@ for i=1:length(DATA.allFiles);
     basicProperties{i,1}.fileLength = length(DATA.allFiles{i}.rawData);
     basicProperties{i,1}.noTrials = DATA.allFiles{i}.rawData(end,count)-DATA.allFiles{i}.rawData(1,count);
     basicProperties{i,1}.trimType = NaN;
+%     basicProperties{i,1}.pairsDprime = nan(length(possibleAngles),1);
+%     basicProperties{i,1}.pairsDprimeSTIM = nan(length(possibleAngles),1);
+%     basicProperties{i,1}.pairsDprimeNoSTIM = nan(length(possibleAngles),1);
     
     tempName = DATA.allFiles{i}.name(strfind(DATA.allFiles{i}.name,'_201'):strfind(DATA.allFiles{i}.name,'_Box'));
     tempLocation = strfind(tempName,'_');
@@ -101,6 +104,22 @@ for i=1:length(DATA.allFiles);
     else
         basicProperties{i,1}.optogenetics = tempOpto;
     end
+    
+      %find out if this session has positive or neg GO stim
+    orgGOIdx = find(strcmp('orgGOangleTab = ', metaData));
+    
+    if isempty(orgGOIdx)
+        basicProperties{i,1}.orgGOstim = 1;
+    else
+        
+    orgGOstim = metaData{orgGOIdx,2};
+    if ischar(orgGOstim)==1
+        basicProperties{i,1}.orgGOstim = str2num(orgGOstim);
+    else
+        basicProperties{i,1}.orgGOstim = orgGOstim;
+    end
+    end
+
     
     %find out if this session was a trimming session
     trimIdx = find(strcmp('Trimming = ', metaData));
@@ -214,12 +233,13 @@ for i=1:length(DATA.allFiles);
                 idxStart = 1;
             else
                 idxStart = sessionDivisions(j,1);
-            end
+            en
             idxEnd = sessionDivisions(j,2);
             tempSegmentData = temptrialTypes(idxStart:idxEnd,:);
             [Hit, FA, Miss,CR, performance, licking, dprime] = JB_countTrialTypes(tempSegmentData);
             basicProperties{i,1}.segmentPerformance(j,1) =  performance;
             basicProperties{i,1}.segmentdPrime(j,1) = dprime;
+            end
         end
     else
         basicProperties{i,1}.segmentPerformance = [];
@@ -228,6 +248,10 @@ for i=1:length(DATA.allFiles);
     
     %Calculare performance for each angle presented and overall
     %performance
+    
+    basicProperties{i,1}.noTrialsSTIM = nan(length(possibleAngles),1);
+     basicProperties{i,1}.noTrialsNoSTIM = nan(length(possibleAngles),1);
+    
     for kk=1:length(possibleAngles)
         stimCount = 1;
         nostimCount = 1;
@@ -261,11 +285,13 @@ for i=1:length(DATA.allFiles);
                 basicProperties{i,1}.trialTypesAngleSTIM{:,kk} = performanceAngleTempSTIM;
                 basicProperties{i,1}.performanceSTIM{kk} = performance;
                 basicProperties{i,1}.probLickingSTIM{kk} =  licking;
+                basicProperties{i,1}.noTrialsSTIM(kk) =  length(performanceAngleTempSTIM);
                 
                 [Hit, FA, Miss,CR, performance, licking, dprime] = JB_countTrialTypes(performanceAngleTempNoSTIM);
                 basicProperties{i,1}.trialTypesAngleNoSTIM{:,kk} = performanceAngleTempNoSTIM;
                 basicProperties{i,1}.performanceNoSTIM{kk} =  performance;
                 basicProperties{i,1}.probLickingNoSTIM{kk} =  licking;
+                 basicProperties{i,1}.noTrialsNoSTIM(kk) =  length(performanceAngleTempNoSTIM);
             end
         end
     end
@@ -391,17 +417,42 @@ for i=1:length(DATA.allFiles);
         if (targetStopIdx(1)<targetStartIdx(1))
             targetStopIdx(1) = [];
         end
+        
+        if (length(targetStartIdx)<2)
+                basicProperties{i,1}.frequencyLicks = nan;
+        basicProperties{i,1}.firstLickLatency = nan;
+        else
+            
         for kk = 1:length(targetStartIdx)-1
             tempDiffLicks = diff(DATA.allFiles{i}.rawData(targetStartIdx(kk):targetStopIdx(kk),licks));
             tempAngleLick = DATA.allFiles{i}.rawData(targetStartIdx(kk),angle);
-            basicProperties{i,1}.frequencyLicks(kk,:) = [sum(tempDiffLicks>0) tempAngleLick];
+            tempStimLick = DATA.allFiles{i}.rawData(targetStartIdx(kk)+10,LEDstate);
+            basicProperties{i,1}.frequencyLicks(kk,:) = [sum(tempDiffLicks>0) tempAngleLick tempStimLick];
             if ~isempty(find(tempDiffLicks>0,1));
                 firstLickidx = (find((tempDiffLicks)>0,1)+targetStartIdx(kk));
-                basicProperties{i,1}.firstLickLatency(kk,:) = [DATA.allFiles{i}.rawData(firstLickidx,millis)-DATA.allFiles{i}.rawData(targetStartIdx(kk),millis) tempAngleLick];
+                basicProperties{i,1}.firstLickLatency(kk,:) = [DATA.allFiles{i}.rawData(firstLickidx,millis)-DATA.allFiles{i}.rawData(targetStartIdx(kk),millis) tempAngleLick tempStimLick];
             else
-                basicProperties{i,1}.firstLickLatency(kk,:) = [nan tempAngleLick];
+                basicProperties{i,1}.firstLickLatency(kk,:) = [nan tempAngleLick tempStimLick];
             end
         end
+        
+        %devide up into latency to each angle.
+        
+          uniqueAngles = unique(basicProperties{i,1}.firstLickLatency(:,2));
+         delA = ~ismember(uniqueAngles,possibleAngles);
+         uniqueAngles(delA)=[];
+        
+        for gg = 1:length(uniqueAngles)
+          %  basicProperties{i,1}.angleLickLatency{gg} = nan(length(basicProperties{i,1}.firstLickLatency),2);
+             idxAngleSTIM = (basicProperties{i,1}.firstLickLatency(:,2)==uniqueAngles(gg)) & (basicProperties{i,1}.firstLickLatency(:,3)==1);    %stimulated tri
+             idxAngleNoSTIM = (basicProperties{i,1}.firstLickLatency(:,2)==uniqueAngles(gg)) & (basicProperties{i,1}.firstLickLatency(:,3)==0);    
+             basicProperties{i,1}.angleLickLatency{gg,1} = basicProperties{i,1}.firstLickLatency(idxAngleNoSTIM,1);
+             basicProperties{i,1}.angleLickLatency{gg,2} = basicProperties{i,1}.firstLickLatency(idxAngleSTIM,1);
+             basicProperties{i,1}.angleLick(gg,1) = uniqueAngles(gg);
+        end
+        end
+        
+        
     else
         basicProperties{i,1}.frequencyLicks = nan;
         basicProperties{i,1}.firstLickLatency = nan;
@@ -447,12 +498,13 @@ end
 %delete empty cells
 basicPropertiesToPlot(any(cellfun(@isempty,basicPropertiesToPlot),2),:)=[];
 %%
-JB_plotPerformance(basicPropertiesToPlot,1)
-JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
-
-% [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,0,1,1);
-% %JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plotON)
-JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1)
+[DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1)
+% JB_plotPerformance(basicPropertiesToPlot,1)
+% JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
+% % 
+% % % [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,0,1,1);
+% % % %JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plotON)
+% JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1)
 % JB_plotTrimming(basicPropertiesToPlot, plotON)
 % JB_plotSegments(basicPropertiesToPlot,plotON)
 end

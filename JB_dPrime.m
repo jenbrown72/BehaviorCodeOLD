@@ -17,7 +17,13 @@ if (~any(Hit)|| ~any(Miss) || ~any(CR) || ~any(FA))
     FA = FA+1;
 end
 
+%X = norminv(P,mu,sigma): mu= mean, sigma = standard deviation 
+
+out=norminv(( 10/( 10+0)),0,1)-norminv((1/(1+11)),0,1);
+
   out=norminv(( Hit/( Hit+Miss)),0,1)-norminv((FA/(FA+CR)),0,1);
+  
+  % [X,XLO,XUP] = norminv(P,mu,sigma,pcov,alpha)
 
 end
 

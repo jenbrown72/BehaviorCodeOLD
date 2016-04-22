@@ -25,8 +25,8 @@ for h = 1:length(listToAnalyse) %for each mouse ID folder
     cd(char(strcat(currDirectory,'\',listToAnalyse{h},'\txtFiles\data')));  %go to the specific mouse folder
     
     %Add here whish functions you want to run
-    [basicPropertiesToPlot] = JB_basicBehaviorPropertiesNeat(1); %run basic properties
-    [DATAtrim] = JB_plotTrimming(basicPropertiesToPlot,1,1);
+    [basicPropertiesToPlot] = JB_basicBehaviorProperties(0,0); %run basic properties
+    [DATAtrim] = JB_plotTrimmingTest(basicPropertiesToPlot,1,0);
     
     %save data into structure
     AllDATA{condition}.data{h} = DATAtrim;

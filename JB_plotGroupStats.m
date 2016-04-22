@@ -1,4 +1,4 @@
-function [] = JB_plotGroupStats(analysedDATA,normdata,diffdata,plotON)
+function [] = JB_plotGroupStats(analysedDATA,normdata,diffdata,exclude,plotON)
 %UNTITLED6 Summary of this function goes here
 %   analysedDATA matrix is generated from : [analysedDATA] = JB_plotGroupAverages(AllDATA,plotON)
 %   norm = 1; normalise data norm = 0; raw data
@@ -19,14 +19,21 @@ else
 end
 
 for i = 1:length(analysedDATA{1}.parameter);
-
-    tempTitle = ['AverageData', ' ', 'Norm', num2str(normdata),' ', 'Diff', num2str(diffdata)];
+    
+    tempTitle = ['AverageData', ' ', 'Norm', num2str(normdata),' ', 'Diff', num2str(diffdata),' ', 'Exclude', num2str(exclude)];
     set(gcf,'name',tempTitle,'numbertitle','off')
     
     for ff=1:length(analysedDATA)
         data{ff} = analysedDATA{ff}.parameter{i}.tempDATA;
     end
-    
+    for ff=1:length(analysedDATA)
+        %exlude DATA
+        if (exclude==1);
+            [~, m] = max(data{ff},[],1);
+            idxDel = m==size((data{ff}),1);
+            data{ff}(:,idxDel)=[];
+        end
+    end
     %normalised data
     
     if normdata==1;
@@ -34,23 +41,21 @@ for i = 1:length(analysedDATA{1}.parameter);
             data{ff} = bsxfun(@rdivide,data{ff}, max(data{ff}));
         end
     end
-
-    if (diffdata==1)
-          for ff = 1:size((data),2)
-                for ffg = 1:size((data{ff}),2)
-              for fg = 1:size((data{ff}),1)-1
-                
-                      
-            tempdata{ff}(fg,ffg)           = diff([data{ff}(1,ffg) data{ff}(fg+1,ffg)]);
-          %  data{ff}(fg,ffg) = diff([data{ff}(1,ffg) data{ff}(fg+1,ffg)]);
-                  end
-              end
-          end
-          
-        Labels = {'Full:R/C', 'Full:double','Full:single','Full:None'};
-    end
-    data = tempdata;
     
+    if (diffdata==1)
+        for ff = 1:size((data),2)
+            for ffg = 1:size((data{ff}),2)
+                for fg = 1:size((data{ff}),1)-1
+                    tempdata{ff}(fg,ffg)           = diff([data{ff}(1,ffg) data{ff}(fg+1,ffg)]);
+                    %  data{ff}(fg,ffg) = diff([data{ff}(1,ffg) data{ff}(fg+1,ffg)]);
+                end
+            end
+        end
+        
+        Labels = {'Full:R/C', 'Full:double','Full:single','Full:None'};
+        
+        data = tempdata;
+    end
     k=1;
     clear p h temp x sigPairsPval sigPairs;
     p = nan(1,size(data{1},1));
@@ -102,6 +107,9 @@ for i = 1:length(analysedDATA{1}.parameter);
         temp{gg} = [x(1,sigPairs{gg}(1)) x(2,sigPairs{gg}(1))];
     end
     sigstar(temp,sigPairsPval,0,0.2);
+    if (diffdata==1)
+        set(gca,'Ydir','reverse')
+    end
     currPlot = currPlot+1;
     
 end

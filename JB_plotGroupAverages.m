@@ -1,8 +1,9 @@
-function [analysedDATA] = JB_plotGroupAverages(AllDATA,normdata,exclude, plotON)
+function [analysedDATA] = JB_plotGroupAverages(AllDATA,normdata,exclude, trimSession, plotON)
 %UNTITLED5 Summary of this function goes here
 %   AllDATA matrix is generated from : [AllDATA] = JB_groupAverages(AllDATA,listToAnalyse,condition)
 %   norm = 1; normalise data norm = 0; raw data
 %   exclude = 1 - exclude mice depending on threshold set below
+% trimSession=1 (first timetrimmed), =2 (secondtimeTrimmed)
 %   plotON =1; plot, plotON = 0, no plot
 
 %load('AllDATA.mat');
@@ -13,9 +14,9 @@ trialPerSessionNo = 2; % needs to be set as want the same number of data points 
 
 %exclude data from mice who could perform the task without their whiskers
 
-%dataToAnalyse = {'performance';'dPrime'};
+dataToAnalyse = {'performance';'dPrime'};
 thresholdToEx = [0.7; 1]; %performance
-dataToAnalyse = {'anglesdPrime90','anglesdPrime58','anglesdPrime30','anglesdPrime14'};
+% dataToAnalyse = {'anglesdPrime90','anglesdPrime58','anglesdPrime30','anglesdPrime14'};
 figureNo=1;
 
 for hh = 1:length(dataToAnalyse)
@@ -41,8 +42,11 @@ for hh = 1:length(dataToAnalyse)
         kk=1;
         
         for i=1:length(AllDATA{j}.data)
-            analysedDATA{j}.parameter{hh}.tempDATA(1:sessionTypeNo,k:k+1) =  AllDATA{j}.data{i}.(dataToAnalyse{hh})(1:sessionTypeNo,1:trialPerSessionNo);
+                        analysedDATA{j}.parameter{hh}.tempDATA(1:sessionTypeNo,k:k+1) =  AllDATA{j}.data{i}.(dataToAnalyse{hh})(1:sessionTypeNo,1:trialPerSessionNo);
             analysedDATA{j}.parameter{hh}.tempDATAmean(1:sessionTypeNo,kk) =  mean(AllDATA{j}.data{i}.(dataToAnalyse{hh})(1:sessionTypeNo,1:trialPerSessionNo),2);
+
+       %     analysedDATA{j}.parameter{hh}.tempDATA(1:sessionTypeNo,k:k+1) =  AllDATA{j}.data{i}.(dataToAnalyse{hh}){trimSession}(1:sessionTypeNo,1:trialPerSessionNo);
+         %   analysedDATA{j}.parameter{hh}.tempDATAmean(1:sessionTypeNo,kk) =  mean(AllDATA{j}.data{i}.(dataToAnalyse{hh}){trimSession}(1:sessionTypeNo,1:trialPerSessionNo),2);
             tempWhiskers(:,kk) =   AllDATA{j}.data{i}.whiskerID(1:5);
             k= k+2;
             kk = kk+1;

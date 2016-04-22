@@ -25,6 +25,7 @@ for h = 1:length(numPoints)
 end
 
 %take the two last sessions before trimming for baseline
+%firstIndTrim = find(diff(indTrim)>0);
 firstIndTrim = find(indTrim,1);
 
 DATAtrim.performanceAll = nan(length(numPoints),1);
@@ -33,6 +34,7 @@ DATAtrim.whiskerIDAll = cell(length(numPoints),1);
 clear DATAtrim.pairedAnglesdPrime DATAtrim.pairedAnglesDiff
 
 if ~isempty(firstIndTrim)
+    for kk = 1:length(firstIndTrim);
     disp(' ');
     if (strcmp(basicPropertiesToPlot{firstIndTrim,1}.trimType,'Row'))
         disp('Analysing a Row data Set');
