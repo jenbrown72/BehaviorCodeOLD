@@ -233,7 +233,6 @@ for i=1:length(DATA.allFiles);
                 idxStart = 1;
             else
                 idxStart = sessionDivisions(j,1);
-            en
             idxEnd = sessionDivisions(j,2);
             tempSegmentData = temptrialTypes(idxStart:idxEnd,:);
             [Hit, FA, Miss,CR, performance, licking, dprime] = JB_countTrialTypes(tempSegmentData);
@@ -485,7 +484,7 @@ for k = 1:length(unique_idx)
     elseif length(unique_idx{k})>1
         t = unique_idx{k};
         for kk = 1:length(t)
-            tempRunVal(kk,1) = basicProperties{t(kk)}.fileLength;
+            tempRunVal(kk,1) = basicProperties{t(kk)}.noTrials;
         end
         [~,di] = max(tempRunVal); %find the data set where the mouse ran the most
         basicPropertiesToPlot{plotNumber,1} = basicProperties{t(di)};
@@ -499,8 +498,8 @@ end
 basicPropertiesToPlot(any(cellfun(@isempty,basicPropertiesToPlot),2),:)=[];
 %%
 [DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1)
-% JB_plotPerformance(basicPropertiesToPlot,1)
-% JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
+JB_plotPerformance(basicPropertiesToPlot,1)
+JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
 % % 
 % % % [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,0,1,1);
 % % % %JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plotON)
