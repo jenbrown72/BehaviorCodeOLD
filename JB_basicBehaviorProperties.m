@@ -497,7 +497,7 @@ end
 %delete empty cells
 basicPropertiesToPlot(any(cellfun(@isempty,basicPropertiesToPlot),2),:)=[];
 %%
-[DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1)
+JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1)
 JB_plotPerformance(basicPropertiesToPlot,1)
 JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
 % % 

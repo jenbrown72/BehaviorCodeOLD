@@ -1,8 +1,20 @@
-function [DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,plotON)
+function [DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,plotON,subset,nostim)
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 positionGraph2 = [34   250   968   692];
-positionGraph3 = [1268   83   644   869];
+positionGraph3 = [152   127   994   869];
+
+if nargin>3
+    toPlot = subset;
+else
+    toPlot = 1:length(basicPropertiesToPlot);
+end
+
+if nargin>4
+    nostim = nostim;
+else
+    nostim = 0;
+end
 
 percentCorrectChance = [0.5 0.5];
 dprimeThreshold = [1 1];
@@ -10,7 +22,7 @@ plotRows = 5;
 plotCols = 4;
 plotTally = (plotRows*plotCols);
 numFigs = 1;
-numPoints = 1:1:length(basicPropertiesToPlot);
+numPoints = 1:1:length(toPlot);
 possibleAngles = [225;241;254;263;266;268;270;272;274;277;284;299;315];
 stimulatedSession = 0;
 saved=1;
@@ -29,20 +41,37 @@ currPlot = 1;
 tn=1;
 DATAstim.dPrime = nan(length(numPoints),2);
 
-for h = 1:length(numPoints)
+for hh = 1:length(toPlot);
+    
+    h = toPlot(hh);
+    %for h = 1:length(numPoints)
     clear meanLatency stdLatency
     
-    if (basicPropertiesToPlot{h,1}.optogenetics)==1
+    if (((basicPropertiesToPlot{h,1}.optogenetics)==1) || (nostim==1))
         saved=0;
         stimulatedSession=1;
         basicPropertiesToPlot{h,1}.pairsDprimeSTIM(~any( basicPropertiesToPlot{h,1}.pairsDprimeSTIM,2),:)=[];
         basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM(~any( basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM,2),:)=[];
         activeAnglesSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceSTIM);
-        activeAnglesnoSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceNoSTIM);
+        
+        if (basicPropertiesToPlot{h,1}.optogenetics)==1
+            activeAnglesnoSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceNoSTIM);
+        else
+            activeAnglesnoSTIM = cell2mat(basicPropertiesToPlot{h,1}.performance);
+        end
+        
+        
+        
         probLickSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingSTIM);
-        probLickNoSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingNoSTIM);
+        
+        if (basicPropertiesToPlot{h,1}.optogenetics)==1
+            probLickNoSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLickingNoSTIM);
+        else
+            probLickNoSTIM = cell2mat(basicPropertiesToPlot{h,1}.probLicking);
+        end
+        
         plotAngles = possibleAngles-270;
-        [~,c] = find(isnan(activeAnglesSTIM));
+        [~,c] = find(isnan(activeAnglesnoSTIM));
         activeAnglesSTIM(c) = [];
         activeAnglesnoSTIM(c) = [];
         plotAngles(c) = [];
@@ -76,11 +105,17 @@ for h = 1:length(numPoints)
         xlimit = xlim;
         ylim([0 1])
         text(xlimit(1),1.05,basicPropertiesToPlot{h,1}.namedata)
-        str = ['d'' C/S',' ', num2str(basicPropertiesToPlot{h,1}.dprimeNoSTIM),' / ', num2str(basicPropertiesToPlot{h,1}.dprimeSTIM)];
+        if (basicPropertiesToPlot{h,1}.optogenetics)==1
+            str = ['d'' C/S',' ', num2str(basicPropertiesToPlot{h,1}.dprimeNoSTIM),' / ', num2str(basicPropertiesToPlot{h,1}.dprimeSTIM)];
+        else
+            str = ['d'' C',' ', num2str(basicPropertiesToPlot{h,1}.dprime)];
+        end
         text(xlimit(1),0.1,str)
-        DATAstim.dPrime(tn,:) = [basicPropertiesToPlot{h,1}.dprimeNoSTIM, basicPropertiesToPlot{h,1}.dprimeSTIM];
-        DATAstim.performance(tn,:) = [basicPropertiesToPlot{h,1}.sessionperformanceNoSTIM, basicPropertiesToPlot{h,1}.sessionperformanceSTIM];
-        
+        text(xlimit(1),0.2,num2str(h))
+        if (basicPropertiesToPlot{h,1}.optogenetics)==1
+            DATAstim.dPrime(tn,:) = [basicPropertiesToPlot{h,1}.dprimeNoSTIM, basicPropertiesToPlot{h,1}.dprimeSTIM];
+            DATAstim.performance(tn,:) = [basicPropertiesToPlot{h,1}.sessionperformanceNoSTIM, basicPropertiesToPlot{h,1}.sessionperformanceSTIM];
+        end
         %plot session lick probability
         subplot(plotRows,plotCols,currPlot);
         plot(plotAngles,probLickSTIM,'o-r','MarkerSize',3,'LineWidth',3);
@@ -94,10 +129,18 @@ for h = 1:length(numPoints)
         
         %plot session dprime
         subplot(plotRows,plotCols,currPlot);
+        
         plot(basicPropertiesToPlot{h,1}.pairsDiff(1:length(basicPropertiesToPlot{h,1}.pairsDprimeSTIM)),basicPropertiesToPlot{h,1}.pairsDprimeSTIM,'o-r','MarkerSize',3,'LineWidth',3);
         hold on;
+          if (basicPropertiesToPlot{h,1}.optogenetics)==1
         plot(basicPropertiesToPlot{h,1}.pairsDiff(1:length(basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM)),basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM,'o-k','MarkerSize',3,'LineWidth',3);
-        currPlot=currPlot+1;
+        
+          else
+                      plot(basicPropertiesToPlot{h,1}.pairsDiff(1:length(basicPropertiesToPlot{h,1}.pairsDprime)),basicPropertiesToPlot{h,1}.pairsDprime,'o-k','MarkerSize',3,'LineWidth',3);
+
+          end
+          
+          currPlot=currPlot+1;
         plot([min(xlim) max(xlim)],dprimeThreshold,'k--','LineWidth',2);
         set(gca, 'Xdir', 'reverse')
         xlabel('Diff Angles');
@@ -271,18 +314,18 @@ if(stimulatedSession==1)
             %
             subplot(plotRows,plotCols,[plotCols+k,plotCols*2+k]);
             
-             plot(tempDATA','k-')
-        hold on
-        errorbar(meandPrime,SEMdPrime,'r-','LineWidth',5)
-        
-%             b1 =  bar(meandPrime)
-%             set(b1,'FaceColor','none','EdgeColor','none','LineWidth',2,'BarWidth',0.5)
-%             hold on
-%             errorbar(meandPrime,SEMdPrime,'.','LineWidth',2,'Color','k')
-%             plot(sigPairs,tempDATA','-','LineWidth',2,'Color',[0.4,0.4,0.4])
-%             if h==1
-%                 sigstar(sigPairs,sigPairsPval,0,0.2)
-%             end
+            plot(tempDATA','k-')
+            hold on
+            errorbar(meandPrime,SEMdPrime,'r-','LineWidth',5)
+            
+            %             b1 =  bar(meandPrime)
+            %             set(b1,'FaceColor','none','EdgeColor','none','LineWidth',2,'BarWidth',0.5)
+            %             hold on
+            %             errorbar(meandPrime,SEMdPrime,'.','LineWidth',2,'Color','k')
+            %             plot(sigPairs,tempDATA','-','LineWidth',2,'Color',[0.4,0.4,0.4])
+            %             if h==1
+            %                 sigstar(sigPairs,sigPairsPval,0,0.2)
+            %             end
             set(gca,'XTick',[1:2]);
             set(gca,'XTickLabel',['Cntr';'Stim']);
             xlimit = [0.5 2.5];

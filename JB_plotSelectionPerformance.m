@@ -69,6 +69,7 @@ for h = 1:length(numPoints)
         xlimit = xlim;
         text(xlimit(1),1.05,basicPropertiesToPlot{numPoints(h),1}.namedata)
         str = strcat('d'' ', num2str(basicPropertiesToPlot{numPoints(h),1}.dprime));
+         text(xlimit(1),0.2,num2str(h))
         text(xlimit(1),0.1,str)
         
         if(basicPropertiesToPlot{numPoints(h),1}.negReinforcer==1)
