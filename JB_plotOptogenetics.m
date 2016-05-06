@@ -50,8 +50,9 @@ for hh = 1:length(toPlot);
     if (((basicPropertiesToPlot{h,1}.optogenetics)==1) || (nostim==1))
         saved=0;
         stimulatedSession=1;
-        basicPropertiesToPlot{h,1}.pairsDprimeSTIM(~any( basicPropertiesToPlot{h,1}.pairsDprimeSTIM,2),:)=[];
-        basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM(~any( basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM,2),:)=[];
+        basicPropertiesToPlot{h,1}.pairsDprimeSTIM(isnan(basicPropertiesToPlot{h,1}.pairsDprimeSTIM),:)=[];
+        basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM(isnan(basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM),:)=[];
+%               basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM(~any(basicPropertiesToPlot{h,1}.pairsDprimeNoSTIM,2),:)=[];
         activeAnglesSTIM = cell2mat(basicPropertiesToPlot{h,1}.performanceSTIM);
         
         if (basicPropertiesToPlot{h,1}.optogenetics)==1
@@ -349,7 +350,7 @@ if(stimulatedSession==1)
     stdLatencies = nanstd(DATAstim.latencysDiff');
     plot(tempangles,meanLatencies,'o-k','MarkerSize',3,'LineWidth',3)
     hold on
-    errorbar(tempangles,meanLatencies,stdLatencies,'o-k','MarkerSize',3,'LineWidth',1)
+%     errorbar(tempangles,meanLatencies,stdLatencies,'o-k','MarkerSize',3,'LineWidth',1)
     NumTicks = length(tempangles);
     L = [tempangles(1) tempangles(end)];
     line(L,[0 0],'LineStyle','--','Color','r')
