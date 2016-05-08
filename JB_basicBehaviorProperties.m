@@ -1,4 +1,4 @@
-function [basicPropertiesToPlot, possibleAngles] = JB_basicBehaviorProperties(plotON,cleanUp)
+function [basicProperties, possibleAngles,info] = JB_basicBehaviorProperties(plotON,cleanUp)
 
 %plotON =1, plot fig/ =0 no plot
 %cleanUp = 1: stop analysis of session early if critiria is reached:
@@ -146,7 +146,7 @@ for i=1:length(DATA.allFiles);
             tempData = DATA.allFiles{i}.rawData;
             index = find(all(tempData==1,2));
             index = [index; length(tempData)]; %add a one to find the start of the first segment
-            segments(1,1) = 1; %add first trial
+%             segments(1,1) = 1; %add first trial
             for kk=1:length(index)-1;
                 countCummulative = tempData(index(kk)-1,6);
                 tempData(index(kk)+1:index(kk+1),6) = tempData(index(kk)+1:index(kk+1),6)+countCummulative;
@@ -234,12 +234,12 @@ for i=1:length(DATA.allFiles);
                 idxStart = 1;
             else
                 idxStart = sessionDivisions(j,1);
+            end
             idxEnd = sessionDivisions(j,2);
             tempSegmentData = temptrialTypes(idxStart:idxEnd,:);
             [Hit, FA, Miss,CR, performance, licking, dprime] = JB_countTrialTypes(tempSegmentData);
             basicProperties{i,1}.segmentPerformance(j,1) =  performance;
             basicProperties{i,1}.segmentdPrime(j,1) = dprime;
-            end
         end
     else
         basicProperties{i,1}.segmentPerformance = [];
@@ -489,8 +489,9 @@ for k = 1:length(unique_idx)
         
         if (basicProperties{unique_idx{k}}.noTrials>minNoTrialsTotal || (cleanUp == 0))
         basicPropertiesToPlot{plotNumber,1} = basicProperties{unique_idx{k}};
-        X = ['Date ', basicPropertiesToPlot{plotNumber,1}.date(1:11), ' ', basicPropertiesToPlot{plotNumber,1}.sessionType, ' Performance ', num2str( basicPropertiesToPlot{plotNumber,1}.sessionperformance), ' dPrime ', num2str(basicPropertiesToPlot{plotNumber,1}.dprime), ' #trials ',num2str(basicPropertiesToPlot{plotNumber,1}.noTrials),' Duration ' ,num2str(basicPropertiesToPlot{plotNumber,1}.sessionDuration)];
+        X = ['Date ', basicPropertiesToPlot{plotNumber,1}.namedata, ' ', basicPropertiesToPlot{plotNumber,1}.sessionType, ' Performance ', num2str( basicPropertiesToPlot{plotNumber,1}.sessionperformance), ' dPrime ', num2str(basicPropertiesToPlot{plotNumber,1}.dprime), ' #trials ',num2str(basicPropertiesToPlot{plotNumber,1}.noTrials),' Duration ' ,num2str(basicPropertiesToPlot{plotNumber,1}.sessionDuration)];
         disp(X)
+        info(k,:) = {basicPropertiesToPlot{plotNumber,1}.namedata ,num2str(basicPropertiesToPlot{plotNumber,1}.dprime)};
         plotNumber = plotNumber+1;
         
         else
@@ -507,7 +508,7 @@ for k = 1:length(unique_idx)
         
         if (basicProperties{t(di)}.noTrials>minNoTrialsTotal || (cleanUp == 0))
         basicPropertiesToPlot{plotNumber,1} = basicProperties{t(di)};
-        X = ['Date ', basicPropertiesToPlot{plotNumber,1}.date(1:11), ' ', basicPropertiesToPlot{plotNumber,1}.sessionType, ' Performance ', num2str( basicPropertiesToPlot{plotNumber,1}.sessionperformance), ' dPrime ', num2str(basicPropertiesToPlot{plotNumber,1}.dprime), ' #trials ',num2str(basicPropertiesToPlot{plotNumber,1}.noTrials),' Duration ' ,num2str(basicPropertiesToPlot{plotNumber,1}.sessionDuration)];
+        X = ['Date ', basicPropertiesToPlot{plotNumber,1}.namedata, ' ', basicPropertiesToPlot{plotNumber,1}.sessionType, ' Performance ', num2str( basicPropertiesToPlot{plotNumber,1}.sessionperformance), ' dPrime ', num2str(basicPropertiesToPlot{plotNumber,1}.dprime), ' #trials ',num2str(basicPropertiesToPlot{plotNumber,1}.noTrials),' Duration ' ,num2str(basicPropertiesToPlot{plotNumber,1}.sessionDuration)];
         disp(X)
         plotNumber = plotNumber+1;
         else

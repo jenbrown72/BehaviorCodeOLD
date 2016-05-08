@@ -121,13 +121,13 @@ end
 figure(3)
 subplot(1,3,1)
 [N,X] = hist(sessionProperties(:,1),15);
-bar(X,N,0.8,'FaceColor','w','EdgeColor','k')
+bar(X,N,1,'FaceColor','w','EdgeColor','k')
 xlabel('number of Trials/session');
 ylabel('session count');
 
 subplot(1,3,2)
 [N,X] = hist(sessionProperties(:,2),15);
-bar(X,N,0.8,'FaceColor','w','EdgeColor','k')
+bar(X,N,1,'FaceColor','w','EdgeColor','k')
 xlabel('duration of session (mins)');
 ylabel('session count');
 xlimit = xlim;

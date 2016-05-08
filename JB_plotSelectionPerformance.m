@@ -1,7 +1,10 @@
-function [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,selection,average,individualTraces)
+function [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,selection,average,individualTraces,stim)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
-
+%eg 
+%[DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,1,[27 29 31],1,0,1)
+%stim=0 all sessions, stim=1 ( stimsession on opto days), stim =2 (control sessions on opto days
+%
 %plot sessionType performance to get an idea of how inclinded to lick the
 %mouse is
 DATAavg = [];
@@ -47,15 +50,35 @@ addedOpto = 0;
 legendAdd = [];
 
 for h = 1:length(numPoints)
+    
+    if ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==1))
+
+    saved = 0;
+    activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performanceSTIM);
+    probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLickingSTIM);
+    trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HITStim basicPropertiesToPlot{numPoints(h),1}.MISSStim;basicPropertiesToPlot{numPoints(h),1}.FAStim basicPropertiesToPlot{numPoints(h),1}.CRStim];
+    
+    elseif ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==2))
+    
+            saved = 0;
+    activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performanceNoSTIM);
+    probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLickingNoSTIM);
+    trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HITNoStim basicPropertiesToPlot{numPoints(h),1}.MISSNoStim;basicPropertiesToPlot{numPoints(h),1}.FANoStim basicPropertiesToPlot{numPoints(h),1}.CRNoStim];
+    
+    else
+        
     saved = 0;
     activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performance);
     probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLicking);
-    plotAngles = possibleAngles-270;
+    trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HIT basicPropertiesToPlot{numPoints(h),1}.MISS;basicPropertiesToPlot{numPoints(h),1}.FA basicPropertiesToPlot{numPoints(h),1}.CR];
+    
+    end
+    
+        plotAngles = possibleAngles-270;
     [~,c] = find(isnan(activeAngles));
     activeAngles(c) = [];
     plotAngles(c) = [];
     probLick(c) = [];
-    trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HIT basicPropertiesToPlot{numPoints(h),1}.MISS;basicPropertiesToPlot{numPoints(h),1}.FA basicPropertiesToPlot{numPoints(h),1}.CR];
     
     if(length(activeAngles)>2) %if more than 2 angles were presented
         figure(ff);

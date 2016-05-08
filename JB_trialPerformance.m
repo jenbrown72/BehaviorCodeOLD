@@ -483,6 +483,8 @@ lineWidthPlots = 4;
 f=1;
 TimeScaled= TimePointsMin;
 currFig = nan;
+legendTab = [];
+addtoLegend = 1;
 
 for vp = 1:length(varToPlot);
     currFig(vp) = figure(vp+1);
@@ -535,20 +537,13 @@ for vp = 1:length(varToPlot);
     
     subplot(5,3,[10 11]) %Plot Average Velocity
     tempVelDATA = data.(varToPlot{vp}).(varToAlign{f})(:,:,1);
-     AvgVelocity = nanmean(tempVelDATA,2);
-     semVelocity = nanstd(tempVelDATA,0,2)/sqrt(size(tempVelDATA,2));
-%     AvgVelocity = nanmean(data.(varToPlot{vp}).(varToAlign{f})(:,:,1),2);
-%     semVelocity = std(data.(varToPlot{vp}).(varToAlign{f})(:,:,1),2)/sqrt(size(data.(varToPlot{vp}).(varToAlign{f})(:,:,1),2));
+    AvgVelocity = nanmean(tempVelDATA,2);
+    semVelocity = nanstd(tempVelDATA,0,2)/sqrt(size(tempVelDATA,2));
     
     [running_speed,time_bins] = JB_computeSpeed(AvgVelocity,sampleRateSpacing,TimeScaled);
     [running_speedSEM] = JB_computeSpeed(semVelocity,sampleRateSpacing,TimeScaled);
     
     shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'})
-%     plot(time_bins,running_speed,'k','LineWidth',3);
-%     hold on
-%     errorbar(running_speed,running_speedSEM)
-    %     smoothedVelocity = smooth(AvgVelocity,smoothVal);
-    %     plot(TimeScaled,smoothedVelocity,'k','LineWidth',3);
     set(gca,'FontSize',16);
     %     xlim([min(TimeScaled), max(TimeScaled)])
     ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
@@ -560,13 +555,13 @@ for vp = 1:length(varToPlot);
     t = TimeScaled;
     tpoints =linspace(min(t),max(t),binSize);
     
-        tempLickDATA = data.(varToPlot{vp}).(varToAlign{f})(:,:,2);
-     AvgLicking = nanmean(tempLickDATA,2);
-     semLicking = nanstd(tempLickDATA,0,2)/sqrt(size(tempLickDATA,2));
+    tempLickDATA = data.(varToPlot{vp}).(varToAlign{f})(:,:,2);
+    AvgLicking = nanmean(tempLickDATA,2);
+    semLicking = nanstd(tempLickDATA,0,2)/sqrt(size(tempLickDATA,2));
     [licking_rate,time_bins] = JB_computeSpeed(AvgLicking,sampleRateSpacing,TimeScaled);
     [licking_rateSEM] = JB_computeSpeed(semLicking,sampleRateSpacing,TimeScaled);
-        shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
-        
+    shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
+    
     set(gca,'FontSize',16);
     %     xlim([min(TimeScaled), max(TimeScaled)])
     ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
@@ -593,55 +588,48 @@ for vp = 1:length(varToPlot);
     ylim([1 size(data.(varToPlot{vp}).(varToAlign{f}),2)])
     set(gca,'YDir','reverse');
     
-    if length(varToPlot)>1
+  %  if length(varToPlot)>1
         figure(99)
         set(gcf,'Position',positionGraph3)
         subplot(2,1,1) %Plot Average Velocity
         if strcmp(varToPlot{vp},'fullSession')
-%             plot(time_bins,running_speed,'k','LineWidth',lineWidthPlots,'Color', 'w')
-            %             plot(TimeScaled,smoothedVelocity,'LineWidth',lineWidthPlots,'Color', 'w');
+            h1 = plot(time_bins,running_speed,'-k')
+            hold on
+            shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'});
+            legendAdd{addtoLegend} = 'h1';
         elseif strcmp(varToPlot{vp},'stimTrials') || strcmp(varToPlot{vp},'NoGoTrials')
-                     shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-r'})
-%             plot(time_bins,running_speed,'k','LineWidth',lineWidthPlots,'Color', 'r')
-            %             plot(TimeScaled,smoothedVelocity,'LineWidth',lineWidthPlots,'Color', 'r');
+            h2 = plot(time_bins,running_speed,'-r')
+            hold on
+            shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-r'});
+            legend(h2,varToPlot{vp})
         elseif strcmp(varToPlot{vp},'cntrTrials') || strcmp(varToPlot{vp},'GoTrials')
-                     shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'})
-%             plot(time_bins,running_speed,'k','LineWidth',lineWidthPlots,'Color', 'k')
-            %             plot(TimeScaled,smoothedVelocity,'LineWidth',lineWidthPlots,'Color','k');
+            h3 = plot(time_bins,running_speed,'-k')
+            hold on
+            shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'});
+            legend(h3,varToPlot{vp})
         end
         hold on
         set(gca,'FontSize',16);
-        %         xlim([min(TimeScaled), max(TimeScaled)])
+        ylim([-5 25]);
+        % xlim([min(TimeScaled), max(TimeScaled)])
         ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
         xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-        legend(varToPlot)
-        %ylim([0 20]);
         
         subplot(2,1,2) %Average licking
         if strcmp(varToPlot{vp},'fullSession')
-            
-              shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-w'})
-%             plot(time_bins,licking_rate,'k','LineWidth',lineWidthPlots,'Color', 'w')
-           
+            shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
         elseif strcmp(varToPlot{vp},'stimTrials') || strcmp(varToPlot{vp},'NoGoTrials')
-             shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-r'})
-%             plot(time_bins,licking_rate,'k','LineWidth',lineWidthPlots,'Color', 'r')
-            %              plot(TimeScaled,smoothedLicking,'LineWidth',lineWidthPlots,'Color', 'r')
-            %   plot(tpoints,full(mean(sparse(1:length(t),bin,AvgLicking))),'LineWidth',lineWidthPlots,'Color', 'r')
+            shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-r'})
         elseif strcmp(varToPlot{vp},'cntrTrials')  || strcmp(varToPlot{vp},'GoTrials')
             shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
-%             plot(time_bins,licking_rate,'k','LineWidth',lineWidthPlots,'Color', 'k')
-            %              plot(TimeScaled,smoothedLicking,'LineWidth',lineWidthPlots,'Color', 'k')
-            
-            %      plot(tpoints,full(mean(sparse(1:length(t),bin,AvgLicking))),'LineWidth',lineWidthPlots,'Color', 'k')
         end
         
         hold on
         set(gca,'FontSize',16);
-        %         xlim([min(TimeScaled), max(TimeScaled)])
+        ylim([-0.05 0.2]);
+        % xlim([min(TimeScaled), max(TimeScaled)])
         ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
         xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-        legend(varToPlot)
         
         if (plotAngles==1)
             
@@ -650,34 +638,25 @@ for vp = 1:length(varToPlot);
             subplot(2,1,1) %Plot Average Velocity
             if strncmp(varToPlot{vp},'stimAngle',9)
                 plot(time_bins,running_speed,'k','LineWidth',lineWidthPlots,'Color',  rgb(plotColor{colorTally}))
-                %                 plot(TimeScaled,smoothedVelocity,'LineWidth',lineWidthPlots,'Color', rgb(plotColor{colorTally}));
                 hold on
-                %                  colorTally = colorTally+1;
-            end
-            hold on
-            set(gca,'FontSize',16);
-            %             xlim([min(TimeScaled), max(TimeScaled)])
-            ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
-            xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-            legend(orientationfieldname)
-            %ylim([0 20]);
-            
-            subplot(2,1,2) %Average licking
-            if strncmp(varToPlot{vp},'stimAngle',9) 
+                set(gca,'FontSize',16);
+                ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
+                xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
+                legend(orientationfieldname)
+                %ylim([0 20]);
+                
+                subplot(2,1,2) %Average licking
                 plot(time_bins,licking_rate,'k','LineWidth',lineWidthPlots,'Color', rgb(plotColor{colorTally}))
-                %                 plot(TimeScaled,smoothedLicking,'LineWidth',lineWidthPlots,'Color', rgb(plotColor{colorTally}));
-                %                   plot(tpoints,full(mean(sparse(1:length(t),bin,AvgLicking))),'LineWidth',2,'Color', rgb(plotColor{colorTally}));
                 hold on
                 colorTally = colorTally+1;
+                hold on
+                set(gca,'FontSize',16);
+                ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
+                xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
+                legend(orientationfieldname)
             end
-            hold on
-            set(gca,'FontSize',16);
-            %             xlim([min(TimeScaled), max(TimeScaled)])
-            ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
-            xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-            legend(orientationfieldname)
         end
-    end
+ %   end
     
 end
 
