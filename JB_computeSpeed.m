@@ -1,8 +1,18 @@
 function [running_speed,time_bins] = JB_computeSpeed(AvgVelocity,sampleRateSpacing,TimeScaled)
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+ 
+% JB_computeSpeed uses data from wheel encoder to extract run speed
+ % 
+ 
+ %   [] = JB_computeSpeed(AvgVelocity,sampleRateSpacing,TimeScaled)
+ %   AvgVelocity 
+ %   sampleRateSpacing sample rate of the session
+ %   TimeScaled time data
+ 
 
-
+ % Examples:
+ %   [running_speed,time_bins] = JB_computeSpeed(AvgVelocity,sampleRateSpacing,TimeScaled);
+ %   
+ 
 % default rotary encoder has 360 pulses per revolution
 % default circumference is 2*pi*7.6 cm = 47.75cm/revolution or 18.84 inches/revolution
 % 

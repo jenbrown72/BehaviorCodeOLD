@@ -1,6 +1,15 @@
 function [] = JB_runBehaviorAnalysis(plotON)
-%UNTITLED4 Summary of this function goes here
-%   Detailed explanation goes here
+% JB_runBehaviorAnalysis function to both load new text files and run basic
+% behavioral analsysis on data from each mouse.
+% Must be in MouseID directory
+
+%   [] = JB_runBehaviorAnalysis
+%   plotON = 1 (plots output), = 0 (no plot generated)
+
+% Examples:
+%   [] = JB_runBehaviorAnalysis(0);
+%
+
 if  nargin==1 
     plotON = plotON;
 else

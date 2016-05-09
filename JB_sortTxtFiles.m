@@ -1,10 +1,12 @@
-
-
 function [] = JB_sortTxtFiles()
-% JB_sortTxtFiles 
-%   Script to sort incoming txt files into their appropriate mouse ID
+
+ % JB_sortTxtFiles  Script to sort incoming txt files into their appropriate mouse ID
 %   folder. Make sure the below directories are appropriate for the
 %   computer and files being used
+
+ %   [] = JB_sortTxtFiles() - data
+ %   Insure youre in the txtFiles directory.
+
 
 %Where are the txt files being loaded and sorted to
 outputdir = 'C:\Users\adesniklab\Documents\BehaviorRawData\MouseIDs\';

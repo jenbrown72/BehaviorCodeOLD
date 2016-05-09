@@ -1,7 +1,23 @@
-function [basicProperties, possibleAngles,info] = JB_basicBehaviorProperties(plotON,cleanUp)
+function [basicPropertiesToPlot, possibleAngles,info] = JB_basicBehaviorProperties(plotON,cleanUp)
 
-%plotON =1, plot fig/ =0 no plot
-%cleanUp = 1: stop analysis of session early if critiria is reached:
+ % JB_basicBehaviorProperties once in the Mouse ID.data file loads DATA.mat
+ % and run a basic analysis on each session
+ % 
+ 
+ %   [] = JB_basicBehaviorProperties(plotON,cleanUp)
+ %   plotON = 1 (plots output), = 0 (no plot generated) 
+ %   cleanUp = 1 (excluded sessions/data based on set criteria), = 0,
+ %   included every session and data point  
+ %   [basicPropertiesToPlot] returned one session per day
+ %   [possibleAngles] returned vector of angles
+ %   [info] returns basic info from each session
+ 
+
+ % Examples:
+ %   [basicPropertiesToPlot, possibleAngles,info] = JB_basicBehaviorProperties(1,0);
+ %
+ %   [basicPropertiesToPlot] = JB_basicBehaviorProperties(0,0);
+ %   
 
 if nargin <2;
     cleanUp=0;

@@ -1,6 +1,23 @@
 function [DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,plotON,subset,nostim)
-%UNTITLED3 Summary of this function goes here
-%   Detailed explanation goes here
+
+ % JB_plotOptogenetics  plots individual performance curves for sessions where photostim was used 
+
+ %   [DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot) - data
+ %   inputed - returned from JB_basicBehaviorProperties
+ %   plotON = 1 (plots output), = 0 (no plot generated) 
+ %   subset = if session numbers are added only these will be analysed e.g.
+ %   [23 33 34]
+ %   nostim = 0 (only sessions where photostim was used will be plotted, =1
+ %   non stimulated days will be plotted.
+ 
+
+ % Examples:
+ %   [[DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1);
+ %
+ %   [DATAstim] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1,[23 24 25],0);
+ %   
+ % 
+ 
 positionGraph2 = [34   250   968   692];
 positionGraph3 = [152   127   994   869];
 

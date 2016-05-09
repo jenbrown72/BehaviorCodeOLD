@@ -1,9 +1,20 @@
 function [DATAtrim] = JB_plotTrimming(basicPropertiesToPlot, plotON, None)
-%UNTITLED5 Summary of this function goes here
-%   Detailed explanation goes here
-%basicPropertiesToPlot
-%plotON = 1, plot fig, 0 = no figure
-%None = 1, include no whiskers in plots, 0 = exclude no whiskers
+
+ % JB_plotTrimming  plots individual trimming data 
+
+ %   [DATAtrim] = JB_plotTrimming(basicPropertiesToPlot) - data
+ %   inputed - returned from JB_basicBehaviorProperties
+ %   plotON = 1 (plots output), = 0 (no plot generated) 
+ %   None = 1 (included non whisker days in plot, = 0, excluded no
+ %   whiskers
+
+ % Examples:
+ %   [DATAtrim] = JB_plotTrimming(basicPropertiesToPlot, 1, 0);
+ %
+ %   [DATAtrim] = JB_plotTrimming(basicPropertiesToPlot, 1, 1);
+ %   [DATATRIM] = returns a matrix of average data to be used in group analysis
+ %   
+
 
 positionGraph1 = [897   382   422   614];
 positionGraph2 = [1097         383         628         613];
