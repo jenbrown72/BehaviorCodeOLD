@@ -98,6 +98,8 @@ for h = 1:length(numPoints)
         currPlot=currPlot+1;
         xlabel('Angles');
         ylabel('Licking Probability');
+          xlimit = xlim;
+        text(xlimit(1),0.2,num2str(h))
         ylim([0 1])
         
         subplot(plotRows,plotCols,currPlot)

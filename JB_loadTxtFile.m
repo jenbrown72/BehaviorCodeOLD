@@ -74,7 +74,7 @@ for i=1:size((D),1);
         
         %For MetaDATA
         metaData = [dataArray{1:end-1}];
-       % metaData = raw;
+        % metaData = raw;
         
         %For tempDATA
         tempDATA = csvread(D(i).name,30,0); % Dont read first line - sometimes contains a string 'A', start from row 26 as the top is metaData
@@ -84,39 +84,44 @@ for i=1:size((D),1);
         disp(['Loading file: ' D(i).name])
         
         C = unique(tempDATA(:,11)); %Identify how many angles were presented
-        stimNumber = size(find(ismember(stimAngles, C)),2);
-        currFileNo = length(DATA.loadedFiles)+1;
         
-        %Save into data format
-        DATA.allFiles{currFileNo} = D(i);
-        DATA.allFiles{currFileNo}.rawData = tempDATA;
-        DATA.allFiles{currFileNo}.metaData = metaData;
-        DATA.loadedFiles{1,currFileNo} = D(i).name;
-        disp(['loaded: ' D(i).name ])
-        disp(' ')
-        filed = 1;
-        newTxtFileCount = newTxtFileCount+1;
-        
-        %Extract date from filename
-        tempName = DATA.allFiles{currFileNo}.name;
-        startIdx = findstr('_201',tempName);
-        endIdx = findstr('_Box',tempName);
-        tempName = tempName(startIdx:endIdx);
-        tempLocation = findstr(tempName,'_');
-        
-        %add a 0to the start of file date names so that sort with work later, e.g.
-        %7 will be 07.
-        for ii = 1:length(tempLocation)-1;
-            if(tempLocation(ii+1)-tempLocation(ii))==2;
-                startName = tempName(1:tempLocation(ii));
-                endName = tempName(tempLocation(ii)+1:end);
-                tempName = strcat(startName,'0',endName);
-                tempLocation = tempLocation+1;
+      
+            stimNumber = size(find(ismember(stimAngles, C)),2);
+            currFileNo = length(DATA.loadedFiles)+1;
+              if length(C)>1
+            %Save into data format
+            DATA.allFiles{currFileNo} = D(i);
+            DATA.allFiles{currFileNo}.rawData = tempDATA;
+            DATA.allFiles{currFileNo}.metaData = metaData;
+            DATA.loadedFiles{1,currFileNo} = D(i).name;
+            disp(['loaded: ' D(i).name ])
+            disp(' ')
+            filed = 1;
+            newTxtFileCount = newTxtFileCount+1;
+              
+            %Extract date from filename
+            tempName = DATA.allFiles{currFileNo}.name;
+            startIdx = findstr('_201',tempName);
+            endIdx = findstr('_Box',tempName);
+            tempName = tempName(startIdx:endIdx);
+            tempLocation = findstr(tempName,'_');
+            
+            %add a 0to the start of file date names so that sort with work later, e.g.
+            %7 will be 07.
+            for ii = 1:length(tempLocation)-1;
+                if(tempLocation(ii+1)-tempLocation(ii))==2;
+                    startName = tempName(1:tempLocation(ii));
+                    endName = tempName(tempLocation(ii)+1:end);
+                    tempName = strcat(startName,'0',endName);
+                    tempLocation = tempLocation+1;
+                end
             end
-        end
-        toDelete = strfind(tempName,'_');
-        tempName(toDelete)=[];
-        DATA.allFiles{currFileNo}.dateFromFile = tempName;
+            toDelete = strfind(tempName,'_');
+            tempName(toDelete)=[];
+            DATA.allFiles{currFileNo}.dateFromFile = tempName;
+              end
+   
+        
     end
     
     if (filed==0)

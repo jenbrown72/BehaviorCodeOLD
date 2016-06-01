@@ -27,8 +27,8 @@ function [AllDATA] = JB_groupAverages(AllDATA,listToAnalyse,condition)
 % listToAnalyse = {'JB022_RL_';'JB022_R_';'JB022_NT_';'SG020_RL_';'SG020_RC_';'SG020_NT_';'JB016_R_';'JB016_CE_';'JB016_NT_';'JB017_RL_';'JB017_RC_';'JB017_R_';'JB017_L_';'JB017_NT_'};
 % listToAnalyse = {'JB022_RL_';'JB022_R_';'SG020_RL_';'SG020_RC_';'SG020_NT_';'JB016_R_';'JB016_CE_';'JB017_RL_';'JB017_RC_';'JB017_R_';'JB017_L_';'JB017_NT_'};
 %listToAnalyse = {'JB016_CE_';'JB016_L_';'JB016_NT_';'JB016_R_';'JB016_RL_'};
-
-
+%  listToAnalyse = {'SG020_RL_';'SG020_RC_';'SG020_NT_';'SG020_RL_';'SG022_RC_';'JB023_NT_';'JB024_R_';'JB024_NT_';'JB025_L_';'JB025_R_';'JB025_RL_';'JB025_CE_'};
+%listToAnalyse = {'JB022_RL_';'JB022_R_';'JB022_NT_'};
 %concat if from different directories:  C = [AllDATA{1,1}.data AllDATA2{1,1}.data]
 
 
@@ -40,14 +40,14 @@ for h = 1:length(listToAnalyse) %for each mouse ID folder
     
     %Add here whish functions you want to run
     [basicPropertiesToPlot,possibleAngles] = JB_basicBehaviorProperties(0,0); %run basic properties
-     [DATA] = JB_plotSegments(basicPropertiesToPlot,0)
+%      [DATA] = JB_plotSegments(basicPropertiesToPlot,0)
 %   [DATAtrim] = JB_plotTrimmingTest(basicPropertiesToPlot,1,0);
 %     [DATA] = JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1);
 
     
     %save data into structure
- AllDATA{condition}.data{h} = DATA;
-%     AllDATA{condition}.data{h} = basicPropertiesToPlot;
+%  AllDATA{condition}.data{h} = DATA;
+    AllDATA{condition}.data{h} = basicPropertiesToPlot;
 %      AllDATA{condition}.data{h}.name = listToAnalyse{h};
     cd(currDirectory);
 end

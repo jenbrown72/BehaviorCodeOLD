@@ -2,7 +2,7 @@ function [DATA] = JB_plotSegments(basicPropertiesToPlot,plotON)
 %UNTITLED6 Summary of this function goes here
 %   Detailed explanation goes here
 %end
-%
+
 positionGraph7 = [754    78   327   869];
 percentCorrectChance = [0.5 0.5];
 dprimeThreshold = [1 1];

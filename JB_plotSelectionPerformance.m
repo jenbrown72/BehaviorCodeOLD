@@ -1,7 +1,7 @@
 function [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,selection,average,individualTraces,stim)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
-%eg 
+%eg
 %[DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,1,[27 29 31],1,0,1)
 %stim=0 all sessions, stim=1 ( stimsession on opto days), stim =2 (control sessions on opto days
 %
@@ -52,29 +52,23 @@ legendAdd = [];
 for h = 1:length(numPoints)
     
     if ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==1))
-
-    saved = 0;
-    activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performanceSTIM);
-    probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLickingSTIM);
-    trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HITStim basicPropertiesToPlot{numPoints(h),1}.MISSStim;basicPropertiesToPlot{numPoints(h),1}.FAStim basicPropertiesToPlot{numPoints(h),1}.CRStim];
-    
+        saved = 0;
+        activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performanceSTIM);
+        probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLickingSTIM);
+        trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HITStim basicPropertiesToPlot{numPoints(h),1}.MISSStim;basicPropertiesToPlot{numPoints(h),1}.FAStim basicPropertiesToPlot{numPoints(h),1}.CRStim];
     elseif ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==2))
-    
-            saved = 0;
-    activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performanceNoSTIM);
-    probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLickingNoSTIM);
-    trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HITNoStim basicPropertiesToPlot{numPoints(h),1}.MISSNoStim;basicPropertiesToPlot{numPoints(h),1}.FANoStim basicPropertiesToPlot{numPoints(h),1}.CRNoStim];
-    
+        saved = 0;
+        activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performanceNoSTIM);
+        probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLickingNoSTIM);
+        trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HITNoStim basicPropertiesToPlot{numPoints(h),1}.MISSNoStim;basicPropertiesToPlot{numPoints(h),1}.FANoStim basicPropertiesToPlot{numPoints(h),1}.CRNoStim];  
     else
-        
-    saved = 0;
-    activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performance);
-    probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLicking);
-    trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HIT basicPropertiesToPlot{numPoints(h),1}.MISS;basicPropertiesToPlot{numPoints(h),1}.FA basicPropertiesToPlot{numPoints(h),1}.CR];
-    
+        saved = 0;
+        activeAngles = cell2mat(basicPropertiesToPlot{numPoints(h),1}.performance);
+        probLick = cell2mat(basicPropertiesToPlot{numPoints(h),1}.probLicking);
+        trialTypecombo = [basicPropertiesToPlot{numPoints(h),1}.HIT basicPropertiesToPlot{numPoints(h),1}.MISS;basicPropertiesToPlot{numPoints(h),1}.FA basicPropertiesToPlot{numPoints(h),1}.CR];
     end
     
-        plotAngles = possibleAngles-270;
+    plotAngles = possibleAngles-270;
     [~,c] = find(isnan(activeAngles));
     activeAngles(c) = [];
     plotAngles(c) = [];
@@ -83,7 +77,7 @@ for h = 1:length(numPoints)
     if(length(activeAngles)>2) %if more than 2 angles were presented
         figure(ff);
         subplot(plotRows,plotCols,currPlot);
-        plot(plotAngles,activeAngles,'o-');
+        plot(plotAngles,activeAngles,'ok-','MarkerFaceColor','k','LineWidth',2, 'MarkerSize',3);
         hold on
         currPlot=currPlot+1;
         xlabel('Angles');
@@ -92,7 +86,7 @@ for h = 1:length(numPoints)
         xlimit = xlim;
         text(xlimit(1),1.05,basicPropertiesToPlot{numPoints(h),1}.namedata)
         str = strcat('d'' ', num2str(basicPropertiesToPlot{numPoints(h),1}.dprime));
-         text(xlimit(1),0.2,num2str(h))
+        text(xlimit(1),0.2,num2str(h))
         text(xlimit(1),0.1,str)
         
         if(basicPropertiesToPlot{numPoints(h),1}.negReinforcer==1)
@@ -127,13 +121,12 @@ for h = 1:length(numPoints)
         
         figure(ff);
         subplot(plotRows,plotCols,currPlot);
-        plot(plotAngles,probLick,'o-');
+        plot(plotAngles,probLick,'o-k','MarkerFaceColor','k','LineWidth',2, 'MarkerSize',3);
         currPlot=currPlot+1;
         xlabel('Angles');
         ylabel('Licking Probability');
-        ylim([0 1])
+        ylim([-0.2 1.2])
         
-        figure(ff);
         subplot(plotRows,plotCols,currPlot)
         bar(trialTypecombo, 'stacked');
         hold on
@@ -141,10 +134,16 @@ for h = 1:length(numPoints)
         set(gca,'XTickLabel',XlableAxis);
         currPlot=currPlot+1;
         
-        figure(ff);
         subplot(plotRows,plotCols,currPlot);
-        dPrimeAngles = basicPropertiesToPlot{numPoints(h),1}.pairsDprime;
-        plot(basicPropertiesToPlot{numPoints(h),1}.pairsDiff(1:length(dPrimeAngles)),dPrimeAngles,'*-')
+        
+        if ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==1))
+            dPrimeAngles = basicPropertiesToPlot{numPoints(h),1}.pairsDprimeSTIM;
+        elseif ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==2))
+            dPrimeAngles = basicPropertiesToPlot{numPoints(h),1}.pairsDprimeNoSTIM;
+        else
+            dPrimeAngles = basicPropertiesToPlot{numPoints(h),1}.pairsDprime;
+        end
+        plot(basicPropertiesToPlot{numPoints(h),1}.pairsDiff(1:length(dPrimeAngles)),dPrimeAngles,'o-k','MarkerFaceColor','k','LineWidth',2, 'MarkerSize',3)
         xlabel('Angle Pairs');
         ylabel('dPrime');
         set(gca, 'Xdir', 'reverse');
@@ -177,13 +176,15 @@ for h = 1:length(numPoints)
         end
         
         if ((average==1) && ~isempty(selection));
-            
+               DATAavg.dprime(h,:) = basicPropertiesToPlot{numPoints(h),1}.dprime;
+                 DATAavg.sessionperformance(h,:) = basicPropertiesToPlot{numPoints(h),1}.sessionperformance;
             DATAavg.activeAngles(h,:) = activeAngles;
             DATAavg.plotAngles(h,:) = plotAngles;
             DATAavg.probLick(h,:) = probLick;
             DATAavg.dPrimeAngles(h,:) = dPrimeAngles;
             DATAavg.dPrimeAnglePairs(h,:) = basicPropertiesToPlot{numPoints(h),1}.pairsDiff(1:length(dPrimeAngles));
-            
+            DATAavg.HITRate(h,:) = basicPropertiesToPlot{numPoints(h),1}.HIT/(basicPropertiesToPlot{numPoints(h),1}.HIT+basicPropertiesToPlot{numPoints(h),1}.MISS);
+             DATAavg.FArate(h,:) = basicPropertiesToPlot{numPoints(h),1}.FA/(basicPropertiesToPlot{numPoints(h),1}.FA+basicPropertiesToPlot{numPoints(h),1}.CR);
         end
     end
     
@@ -200,8 +201,8 @@ if ((average==1) && ~isempty(selection));
     figure(fff);
     subplot(1,3,1);
     if(individualTraces==1)
-    plot(DATAavg.plotAngles',DATAavg.activeAngles','-','Color',[0.4 0.4 0.4])
-    hold on
+        plot(DATAavg.plotAngles',DATAavg.activeAngles','-','Color',[0.4 0.4 0.4])
+        hold on
     end
     errorbar(mean(DATAavg.plotAngles)',mean(DATAavg.activeAngles)',std(DATAavg.activeAngles),'k','Linewidth',avgLineWidth)
     hold on
@@ -212,33 +213,33 @@ if ((average==1) && ~isempty(selection));
     xlimit = xlim;
     
     subplot(1,3,2);
-     if(individualTraces==1)
-    plot(DATAavg.plotAngles',DATAavg.probLick','-','Color',[0.4 0.4 0.4])
-    hold on
-     end
+    if(individualTraces==1)
+        plot(DATAavg.plotAngles',DATAavg.probLick','-','Color',[0.4 0.4 0.4])
+        hold on
+    end
     errorbar(mean(DATAavg.plotAngles)',mean(DATAavg.probLick)',std(DATAavg.probLick),'k','Linewidth',avgLineWidth)
-      hold on
-      plot([min(xlim) max(xlim)],percentCorrectChance,'k--','LineWidth',2)
+    hold on
+    plot([min(xlim) max(xlim)],percentCorrectChance,'k--','LineWidth',2)
     xlabel('Angles');
     ylabel('Licking Probability');
-    ylim([0 1])
+    ylim([-0.2 1.2])
     
     subplot(1,3,3);
-     if(individualTraces==1)
-    plot(DATAavg.dPrimeAnglePairs',DATAavg.dPrimeAngles','-','Color',[0.4 0.4 0.4])
-    hold on
-     end
+    if(individualTraces==1)
+        plot(DATAavg.dPrimeAnglePairs',DATAavg.dPrimeAngles','-','Color',[0.4 0.4 0.4])
+        hold on
+    end
     errorbar(mean(DATAavg.dPrimeAnglePairs)',mean(DATAavg.dPrimeAngles)',std(DATAavg.dPrimeAngles),'k','Linewidth',avgLineWidth)
     hold on
     plot([1 max(xlim)],dprimeThreshold,'k--','LineWidth',2)
-    ylim([0 max(DATAavg.dPrimeAngles(:))])
+    ylim([-1 4])
     xlabel('Angle Pairs');
     ylabel('dPrime');
     set(gca, 'Xdir', 'reverse');
     
-
+    
     saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\avgPsychometricCurves',baseFileName),'jpeg');
-
+    
 end
 
 end

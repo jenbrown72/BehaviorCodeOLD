@@ -7,8 +7,11 @@ function [sessionProperties,sessionsToCriterion] = JB_plotGroupLearning(AllDATA,
 positionGraph1 = [14    42   353   954];
 positionGraph2 = [380    42   353   954];
 positionGraph3 = [735   741   879   255];
+positionGraph4 = [1349          44         557         952];
 markerSizePlots=6;
-tally=1;
+percentCorrectChance = [0.5 0.5];
+tally2=1;
+
 
 if (plotON==1)
     f1 = figure(1);clf
@@ -22,6 +25,10 @@ if (plotON==1)
     f3 = figure(3);clf
     set(f3,'Position',positionGraph3);
     set(f3,'name','sessionProperties','numbertitle','off');
+    
+    f4 = figure(4);clf
+    set(f4,'Position',positionGraph4);
+    set(f4,'name','sessionProperties','numbertitle','off');
 else
     figure('Visible','off');clf;
 end
@@ -54,6 +61,21 @@ for kk = 1:length(AllDATA)
         elseif strcmp('S12',basicPropertiesToPlot{j,1}.sessionType)
             sessionCode(j,1) = 7;
         end
+        
+        blockPerformance = basicPropertiesToPlot{j,1}.temptrialTypes;
+        
+        blockPerformance(blockPerformance==4)=1; %CR
+        blockPerformance(blockPerformance==1)=1; %Hit
+        blockPerformance(blockPerformance==2)=0; %FA
+        blockPerformance(blockPerformance==3)=0; %Miss
+        
+        tally = 0;
+        basicPropertiesToPlot{j,1}.rolloingperformance = [];
+        for kj = 1:length(blockPerformance)
+            basicPropertiesToPlot{j,1}.rolloingperformance(kj,1) = (blockPerformance(kj)+tally)/kj;
+            tally = tally+blockPerformance(kj);
+        end
+        
     end
     
     for j = 1:length(numPoints);
@@ -108,12 +130,41 @@ for kk = 1:length(AllDATA)
         end
     end
     
+    spaceBetweenSessions = 40;
+    figure(f4);
+    subplot(noSubPlots,1,kk)
+    
+    cummX = 1;
+    for jj = 1:sessionNoStop;
+        %            for jj = 1:length(basicPropertiesToPlot)
+        if ~isempty(basicPropertiesToPlot{jj,1}.rolloingperformance) && (length(basicPropertiesToPlot{jj,1}.rolloingperformance)>100);
+            movingAvg=movingmean( basicPropertiesToPlot{jj,1}.rolloingperformance,61);
+            plot(cummX:cummX+length(movingAvg)-1,movingAvg,'-', 'Color',[0.4,ColorCodeColors(sessionCode(jj)),0.8],'LineWidth',4)
+            hold on
+            xlimit = xlim;
+            cummX = cummX + length(movingAvg) + spaceBetweenSessions;
+            text(xlimit(1),max(ylim)+0.1,basicPropertiesToPlot{jj,1}.mouseID)
+        end
+    end
+    ylim([0 1])
+    xlim([0 5000])
+    plot([min(xlim) max(xlim)],percentCorrectChance,'k--','LineWidth',1);
+    xlimit = xlim;
+    if (kk==noSubPlots)
+        ylabel('Moving fraction Correct');
+        xlabel('Trial No.');
+    else
+        set(gca,'XTickLabel',[])
+    end
+    %     ylabel('Moving fraction Correct')
+    %     xlabel('Trial No.')
+    
     sessionToinclude = (find(sessionCode(:,1)==5));
     sessionsToCriterion(kk,1) = sessionToinclude(1);
     
     for j = 1:length(sessionToinclude);
-        sessionProperties(tally,:) = [basicPropertiesToPlot{sessionToinclude(j),1}.noTrials basicPropertiesToPlot{sessionToinclude(j),1}.sessionDuration];
-        tally = tally+1;
+        sessionProperties(tally2,:) = [basicPropertiesToPlot{sessionToinclude(j),1}.noTrials basicPropertiesToPlot{sessionToinclude(j),1}.sessionDuration];
+        tally2 = tally2+1;
     end
     
 end
@@ -131,10 +182,10 @@ bar(X,N,1,'FaceColor','w','EdgeColor','k')
 xlabel('duration of session (mins)');
 ylabel('session count');
 xlimit = xlim;
-strText = ['No. session',' ' , num2str(tally)];
-text(((xlimit(2)/5)*4),((max(ylim)/10)*9),strText)
+strText = ['No. session',' ' , num2str(tally2)];
+text(((xlimit(2)/5)*2.5),((max(ylim)/10)*9),strText)
 strText = ['No. mice',' ' , num2str(kk)];
-text(((xlimit(2)/5)*4),((max(ylim)/10)*8),strText)
+text(((xlimit(2)/5)*2.5),((max(ylim)/10)*8),strText)
 
 subplot(1,3,3)
 sortedDATA = sort(sessionsToCriterion);

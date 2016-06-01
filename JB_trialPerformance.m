@@ -1,6 +1,9 @@
-function [data] = JB_trialPerformance(DATA,sessionNo,stim,plotAngles,includeVelocityMap)
+function [data] = JB_trialPerformance(DATA,sessionNo,stim,plotAngles,includeVelocityMap,cleanUp)
 %UNTITLED2 Summary of this function goes here
 %   Detailed explanation goes here
+% analysis stop early criteria
+minNoTrialsTotal = 200; % no of trials required to have been completed for this criteria to be used
+stopExThreshold = 32; % no of consequtive misses and correct rejections to say the mouse wasn't engaged and stop analysis (4xS8)
 
 % load DATA.mat
 positionGraph2 = [680 288 314 690];
@@ -14,6 +17,14 @@ PostStim=2000;
 figure(99);clf;
 
 tempDATA = DATA.allFiles{1,sessionNo}.rawData;
+metaData = DATA.allFiles{1,sessionNo}.metaData;
+
+    orgGOIdx = find(strcmp('orgGOangleTab = ', metaData));
+     if isempty(orgGOIdx)
+        basicProperties{i,1}.orgGOstim = 1;
+     else
+    orgGOstim = str2num(metaData{orgGOIdx,2});
+     end
 
 if (stim==0)
     varToPlot = {'fullSession'};
@@ -98,9 +109,10 @@ end
 
 %% Define Target Time, Position, Correct (Hit, correct Rejection) or Incorrect (Miss, or False Alarm) data.trial
 
-sampleRateSpacing = 1; %2ms sampling
+sampleRateSpacing = 1; %1ms sampling
 hitCount = 0;
 crCount = 0;
+ stopIdx=0;
 
 for j = 1: length(data.trial);
     
@@ -111,7 +123,7 @@ for j = 1: length(data.trial);
     %make each data point uniformly sampled
     for i = 1:size((data.trial{j}.raw),2);
         tempTrial = data.trial{j}.raw(:,i);
-        filteredSampleTimes = 0:sampleRateSpacing:max(SampleTimes); %2msec spacing
+        filteredSampleTimes = 0:sampleRateSpacing:max(SampleTimes); %1msec spacing
         tempFiltered(:,i)=interp1(SampleTimes,tempTrial,filteredSampleTimes);
     end
     
@@ -185,12 +197,12 @@ for j = 1: length(data.trial);
     end
     
     % Update Trial Type Results
-    if data.trial{j}.Performance.LickFrequency>0; % If there was licking..
-        if (data.trial{j}.Performance.StimType < midPoint); % If this was the GoTrials stimulus - Hit trial
+     if data.trial{j}.Performance.LickFrequency>0; % If there was licking..
+        if (data.trial{j}.Performance.TrialType(1) == 1); % If this was the GoTrials stimulus - Hit trial
             hitCount = hitCount+1;
             data.trial{j}.Performance.OutcomeLick = 1; % Anticipatory lick - Hit trial
             data.trial{j}.Performance.OutcomeCode = 1;
-        elseif (data.trial{j}.Performance.StimType > midPoint) % If this was a distractor stimulus
+        elseif (data.trial{j}.Performance.TrialType(1) == 2)% If this was a distractor stimulus - false alarm
             data.trial{j}.Performance.OutcomeLick = 1;% False Alarm - incorrect lick
             data.trial{j}.Performance.OutcomeCode = 2;
         elseif (data.trial{j}.Performance.StimType == midPoint) % If this was exactly in the middle
@@ -198,10 +210,10 @@ for j = 1: length(data.trial);
             data.trial{j}.Performance.OutcomeCode = 5; % 5 if licked, 6 if didn't
         end
     else
-        if (data.trial{j}.Performance.StimType < midPoint); % If this was the no GoTrials stimulus
+        if (data.trial{j}.Performance.TrialType(1) == 3); % If this was the no GoTrials stimulus
             data.trial{j}.Performance.OutcomeLick = 0;  % No anticipatory lick - Miss trial
             data.trial{j}.Performance.OutcomeCode = 3;
-        elseif (data.trial{j}.Performance.StimType > midPoint) % If this was a distractor stimulus
+        elseif (data.trial{j}.Performance.TrialType(1) == 4) % If this was a distractor stimulus
             crCount = crCount+1;
             data.trial{j}.Performance.OutcomeLick = 0; % Correctly withheld lick
             data.trial{j}.Performance.OutcomeCode = 4;
@@ -210,8 +222,75 @@ for j = 1: length(data.trial);
             data.trial{j}.Performance.OutcomeCode = 6; % 5 if licked, 6 if didn't
         end
     end
+%     if data.trial{j}.Performance.LickFrequency>0; % If there was licking..
+%         if (data.trial{j}.Performance.StimType < midPoint); % If this was the GoTrials stimulus - Hit trial
+%             hitCount = hitCount+1;
+%             data.trial{j}.Performance.OutcomeLick = 1; % Anticipatory lick - Hit trial
+%             data.trial{j}.Performance.OutcomeCode = 1;
+%         elseif (data.trial{j}.Performance.StimType > midPoint) % If this was a distractor stimulus
+%             data.trial{j}.Performance.OutcomeLick = 1;% False Alarm - incorrect lick
+%             data.trial{j}.Performance.OutcomeCode = 2;
+%         elseif (data.trial{j}.Performance.StimType == midPoint) % If this was exactly in the middle
+%             data.trial{j}.Performance.OutcomeLick = 1;% licked for 50% verticle
+%             data.trial{j}.Performance.OutcomeCode = 5; % 5 if licked, 6 if didn't
+%         end
+%     else
+%         if (data.trial{j}.Performance.StimType < midPoint); % If this was the no GoTrials stimulus
+%             data.trial{j}.Performance.OutcomeLick = 0;  % No anticipatory lick - Miss trial
+%             data.trial{j}.Performance.OutcomeCode = 3;
+%         elseif (data.trial{j}.Performance.StimType > midPoint) % If this was a distractor stimulus
+%             crCount = crCount+1;
+%             data.trial{j}.Performance.OutcomeLick = 0; % Correctly withheld lick
+%             data.trial{j}.Performance.OutcomeCode = 4;
+%         elseif (data.trial{j}.Performance.StimType == midPoint) % If this was exactly in the middle
+%             data.trial{j}.Performance.OutcomeLick = 0;% licked for 50% verticle
+%             data.trial{j}.Performance.OutcomeCode = 6; % 5 if licked, 6 if didn't
+%         end
+%     end
     cumulativePerformance(j,1) = ((hitCount+crCount)/j);
+    
+    
 end
+
+for j=1:length(data.trial);
+    
+    data.CumulativePerformance(j,1) = data.trial{j}.Performance.StimType;
+    data.CumulativePerformance(j,2) = data.trial{j}.Performance.OutcomeLick;
+    data.CumulativePerformance(j,3) = data.trial{j}.Performance.LickFrequency;
+    data.CumulativePerformance(j,4) = data.trial{j}.Performance.FirstLickLatency;
+    data.CumulativePerformance(j,5) = data.trial{j}.Performance.OutcomeCode;
+    data.CumulativePerformance(j,6) = data.trial{j}.Performance.StimTrial;
+end
+
+
+ %find how many consequtive trials with no lick there were
+        ff = (data.CumulativePerformance(minNoTrialsTotal:end,5)==3) | (data.CumulativePerformance(minNoTrialsTotal:end,5)==4); %miss and correct rejection
+        tempCum = 1;
+        if ~isempty(ff)
+            cumCount = nan(length(ff),1);
+            for v = 1:length(ff)-1
+                if (ff(v) && ff(v+1)) ==1;
+                    tempCum = tempCum+1;
+                else
+                    tempCum = 1;
+                end
+                cumCount(v,1) = tempCum;
+            end
+            idxStop = (find(cumCount>stopExThreshold))+(minNoTrialsTotal);
+            if ~isempty(idxStop) && (cleanUp == 1)
+                stopIdx = idxStop(1)-stopExThreshold;
+                if stopIdx>0
+                    X = [' Stopping Session Analysis Early By', num2str(length(data.CumulativePerformance)- stopIdx), 'Trials', 'On trial No.', num2str(stopIdx),'Out Of',num2str(length(data.CumulativePerformance))] ;
+%                     line(xlim, [stopIdx stopIdx], 'Color', 'k','LineWidth',2);
+%                     idx(stopIdx:end)=[];
+%                     disp(X)
+                end
+            else   
+                stopIdx=0;
+            end
+            
+            
+        end
 
 
 %% Test Pad data.trial and align to reward onset TEST
@@ -269,7 +348,7 @@ for f = 1:length(varToAlign)
     stimON = 1;
     stimOFF = 1;
     
-    for j=1:length(data.trial);
+    for j=1:length(data.trial)-stopIdx;
         raster_matrix = [];
         velocityTemp = diff(data.trial{j}.filteredDATA(:,1));
         
@@ -308,7 +387,7 @@ for f = 1:length(varToAlign)
         
     end
     
-    for j=1:length(data.trial);
+    for j=1:length(data.trial)-stopIdx;
         
         %Separate Data output into GoTrials Stim and Distractor and Hit Miss Correct Rejection False Alarm
         %Trials
@@ -371,7 +450,7 @@ for f = 1:length(varToAlign)
             stimOFF = stimOFF+1;
         end
         
-        if (data.trial{j}.Performance.StimType < midPoint); %GoTrials Stim
+           if (data.trial{j}.Performance.TrialType(1) == 1 || (data.trial{j}.Performance.TrialType(1) == 3)); %GoTrials Stim
             data.GoTrials.(varToAlign{f})(:,s1,:) = data.fullSession.(varToAlign{f})(:,j,:);
             s1=s1+1;
             if data.trial{j}.Performance.OutcomeLick==1; %HIT trial
@@ -395,7 +474,7 @@ for f = 1:length(varToAlign)
                     mNoStim1 = mNoStim1+1;
                 end
             end
-        elseif (data.trial{j}.Performance.StimType > midPoint); %NoGoTrials Stim
+        elseif (data.trial{j}.Performance.TrialType(1) ==2 || (data.trial{j}.Performance.TrialType(1) == 4)); %NoGoTrials Stim
             data.NoGoTrials.(varToAlign{f})(:,d1,:) = data.fullSession.(varToAlign{f})(:,j,:);
             d1=d1+1;
             if data.trial{j}.Performance.OutcomeLick==0; %Correct Rejection Trial
@@ -433,7 +512,69 @@ for f = 1:length(varToAlign)
             end
         end
         
-        for k = 1:length(data.angleOrientations)
+%         if (data.trial{j}.Performance.StimType < midPoint); %GoTrials Stim
+%             data.GoTrials.(varToAlign{f})(:,s1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%             s1=s1+1;
+%             if data.trial{j}.Performance.OutcomeLick==1; %HIT trial
+%                 data.AlignedDATA.TrialType.HIT.(varToAlign{f})(:,h1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                 h1 = h1+1;
+%                 if data.trial{j}.Performance.StimTrial==1; %Stimulation
+%                     data.AlignedDATA.TrialType.HITStim.(varToAlign{f})(:,hStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     hStim1 = hStim1+1;
+%                 else
+%                     data.AlignedDATA.TrialType.HITNoStim.(varToAlign{f})(:,hNoStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     hNoStim1 = hNoStim1+1;
+%                 end
+%             elseif data.trial{j}.Performance.OutcomeLick==0 %Miss trial
+%                 data.AlignedDATA.TrialType.MISS.(varToAlign{f})(:,m1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                 m1 = m1+1;
+%                 if data.trial{j}.Performance.StimTrial==1; %Stimulation
+%                     data.AlignedDATA.TrialType.MISSStim.(varToAlign{f})(:,mStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     mStim1 = mStim1+1;
+%                 else
+%                     data.AlignedDATA.TrialType.MISSNoStim.(varToAlign{f})(:,mNoStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     mNoStim1 = mNoStim1+1;
+%                 end
+%             end
+%         elseif (data.trial{j}.Performance.StimType > midPoint); %NoGoTrials Stim
+%             data.NoGoTrials.(varToAlign{f})(:,d1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%             d1=d1+1;
+%             if data.trial{j}.Performance.OutcomeLick==0; %Correct Rejection Trial
+%                 data.AlignedDATA.TrialType.CorrectRejection.(varToAlign{f})(:,cr1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                 cr1 = cr1+1;
+%                 if data.trial{j}.Performance.StimTrial==1; %Stimulation
+%                     data.AlignedDATA.TrialType.CorrectRejectionStim.(varToAlign{f})(:,crStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     crStim1 = crStim1+1;
+%                 else
+%                     data.AlignedDATA.TrialType.CorrectRejectionNoStim.(varToAlign{f})(:,crNoStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     crNoStim1 = crNoStim1+1;
+%                 end
+%                 
+%             elseif data.trial{j}.Performance.OutcomeLick==1; %false alarm trial
+%                 data.AlignedDATA.TrialType.FalseAlarm.(varToAlign{f})(:,fa1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                 fa1 = fa1+1;
+%                 if data.trial{j}.Performance.StimTrial==1; %Stimulation
+%                     data.AlignedDATA.TrialType.FalseAlarmStim.(varToAlign{f})(:,faStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     faStim1 = faStim1+1;
+%                 else
+%                     data.AlignedDATA.TrialType.FalseAlarmNoStim.(varToAlign{f})(:,faNoStim1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                     faNoStim1 = faNoStim1+1;
+%                 end
+%             end
+%             
+%         elseif (data.trial{j}.Performance.StimType == midPoint); %midpoint
+%             data.AlignedDATAallDATAmidPoint.(varToAlign{f})(:,mp1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%             mp1=mp1+1;
+%             if data.trial{j}.Performance.OutcomeLick==0; %didn't lick
+%                 data.AlignedDATA.TrialType.midPointNoLickCount.(varToAlign{f})(:,mnl1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                 mnl1 = mnl1+1;
+%             elseif data.trial{j}.Performance.OutcomeLick==1; %false alarm trial
+%                 data.AlignedDATA.TrialType.midPointLickCount.(varToAlign{f})(:,ml1,:) = data.fullSession.(varToAlign{f})(:,j,:);
+%                 ml1 = ml1+1;
+%             end
+%         end
+        
+        for k = 1:length(data.angleOrientations)-stopIdx
             if data.trial{j}.Performance.StimType==data.angleOrientations(k); % distractor 1
                 data.(orientationfieldname{k}).(varToAlign{f})(:,size((data.(orientationfieldname{k}).(varToAlign{f})),2)+1,:) = data.fullSession.(varToAlign{f})(:,j,:);
             end
@@ -475,7 +616,6 @@ for f = 1:length(varToAlign)
 end
 
 %%
-
 fontSize = 16;
 smoothVal=201;
 colorTally=1;
@@ -486,7 +626,11 @@ currFig = nan;
 legendTab = [];
 addtoLegend = 1;
 
-for vp = 1:length(varToPlot);
+% tempAccAll = nan(size(data.(varToPlot{1}).(varToAlign{1}),2),length(varToPlot));
+% tempAccMin= nan(size(data.(varToPlot{1}).(varToAlign{1}),2),length(varToPlot));
+% tempAccMax= nan(size(data.(varToPlot{1}).(varToAlign{1}),2),length(varToPlot));
+ for vp = 1:length(varToPlot);
+%    for vp = 2;
     currFig(vp) = figure(vp+1);
     set(currFig(vp),'name',varToPlot{vp},'numbertitle','off');
     set(currFig(vp),'Position',positionGraph1)
@@ -499,6 +643,7 @@ for vp = 1:length(varToPlot);
         raster_matrix(i,:) = spike_matrix(i,:).*i;
     end
     
+    figure( currFig(vp))
     subplot(5,3,[1 2 4 5 7 8])
     %Velocity
     if (includeVelocityMap==1)
@@ -528,22 +673,79 @@ for vp = 1:length(varToPlot);
             line([TimeScaled(lickLine(k,1)) TimeScaled(lickLine(k,1))], [k-1 k],'Color','r', 'LineWidth',3);
         end
     end
+%         %computer speed for each trial
+%         tempVelDATA = data.(varToPlot{vp}).(varToAlign{f})(:,k,1);
+%         [running_speed,time_bins] = JB_computeSpeed(tempVelDATA,sampleRateSpacing,TimeScaled,1);
+%         chargeSpeed = diff(running_speed);
+%         changeTime = diff(time_bins);
+%         acc = chargeSpeed./changeTime;
+%  %smooth(running_speed)
+%         tempTimeBins = time_bins(1,15:25);
+%         tempX = acc(1,15:25);
+%         
+%         timeP = (min(tempTimeBins):0.1:max(tempTimeBins));
+%         [gg] = interp1(tempTimeBins,tempX,timeP);
+%         
+%         [~,peakMin] = min(gg); 
+% %         tri = delaunayn(gg');
+%         [ff,~] = dsearchn(gg',0);
+% %          [ff,~] = dsearchn(gg',tri,0);
+%         accelerationTime(k,vp) = timeP(ff);
+%         
+% %         figure(77);clf
+% %         subplot(2,1,1)
+% %          plot(time_bins,running_speed)
+% %          hold on
+% %          plot([timeP(ff) timeP(ff)],[min(ylim) max(ylim)],'b--','LineWidth',2)
+% %          
+% %          subplot(2,1,2)
+% %          plot(timeP,gg)
+% %          hold on
+% %          plot([timeP(ff) timeP(ff)],[min(ylim) max(ylim)],'b--','LineWidth',2)
+% %   jjj = waitforbuttonpress;
+%          
+%         %     hold on
+%         %     plot(time_bins(1:end-1),chargeSpeed)
+%         %     hold on
+%         %     plot(time_bins(1:end-1),acc*1000,'m')
+%         
+%     end
+    
+    
+%         end
+    
     set(gca,'YDir','reverse');
     set(gca,'FontSize',16);
     xlim([min(TimeScaled), max(TimeScaled)]);
-    ylim([1 size(data.(varToPlot{vp}).(varToAlign{f}),2)])
+    ylim([1 size(data.(varToPlot{vp}).(varToAlign{f}),2)-stopIdx])
     ylabel('Trial number', 'FontSize', fontSize,'fontWeight','bold');
     xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
     
+    figure(currFig(vp))
     subplot(5,3,[10 11]) %Plot Average Velocity
     tempVelDATA = data.(varToPlot{vp}).(varToAlign{f})(:,:,1);
     AvgVelocity = nanmean(tempVelDATA,2);
     semVelocity = nanstd(tempVelDATA,0,2)/sqrt(size(tempVelDATA,2));
     
-    [running_speed,time_bins] = JB_computeSpeed(AvgVelocity,sampleRateSpacing,TimeScaled);
-    [running_speedSEM] = JB_computeSpeed(semVelocity,sampleRateSpacing,TimeScaled);
+    [running_speed,time_bins] = JB_computeSpeed(AvgVelocity,sampleRateSpacing,TimeScaled,1);
+    [running_speedSEM] = JB_computeSpeed(semVelocity,sampleRateSpacing,TimeScaled,1);
+    
+    chargeSpeed = diff(running_speed);
+    changeTime = diff(time_bins);
+    acc = chargeSpeed./changeTime;
+    timeP = (-500:0.1:500);
+    [gg] = interp1(time_bins(1:end-1),acc,timeP);
+    [~,idxAb] = min(abs(gg));
+    maxAccerlation(vp) = timeP(idxAb);
+    
+    [~,m] = min(acc);
+    [~,mA] = max(acc);
     
     shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'})
+    hold on
+    plot(time_bins(m),running_speed(m),'og');
+    plot(time_bins(mA),running_speed(mA),'ob')
+    
     set(gca,'FontSize',16);
     %     xlim([min(TimeScaled), max(TimeScaled)])
     ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
@@ -553,13 +755,12 @@ for vp = 1:length(varToPlot);
     subplot(5,3,[13 14]) %Average licking
     binSize = 200;
     t = TimeScaled;
-    tpoints =linspace(min(t),max(t),binSize);
     
     tempLickDATA = data.(varToPlot{vp}).(varToAlign{f})(:,:,2);
     AvgLicking = nanmean(tempLickDATA,2);
     semLicking = nanstd(tempLickDATA,0,2)/sqrt(size(tempLickDATA,2));
-    [licking_rate,time_bins] = JB_computeSpeed(AvgLicking,sampleRateSpacing,TimeScaled);
-    [licking_rateSEM] = JB_computeSpeed(semLicking,sampleRateSpacing,TimeScaled);
+    [licking_rate,time_bins] = JB_computeSpeed(AvgLicking,sampleRateSpacing,TimeScaled,0);
+    [licking_rateSEM] = JB_computeSpeed(semLicking,sampleRateSpacing,TimeScaled,0);
     shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
     
     set(gca,'FontSize',16);
@@ -568,97 +769,182 @@ for vp = 1:length(varToPlot);
     xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
     
     subplot(5,3,[3 6 9])
-    for i=1:size(data.(varToPlot{vp}).(varToAlign{f}),2)
-        if data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==1 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)<=midPoint; % Correct Lick on GoTrials stimulus = Hit
-            line([0 1], [i i], 'Color', 'g','LineWidth',2);
-            hold on;
-        elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==0 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)<=midPoint; % No Lick on GoTrials stimulus = Miss
+    
+        for i=1:size(data.(varToPlot{vp}).(varToAlign{f}),2)
+        if data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==1 && data.(varToPlot{vp}).(varToAlign{f})(1,i,7)==1; % Correct Lick on GoTrials stimulus = Hit
             line([0 1], [i i], 'Color', 'r','LineWidth',2);
             hold on;
-        elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==0 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)>=midPoint; % No Lick on Distractor stimulus = Correct Rejection
-            line([2 3], [i i], 'Color', 'g','LineWidth',2);
+        elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==0 && data.(varToPlot{vp}).(varToAlign{f})(1,i,7)==3; % No Lick on GoTrials stimulus = Miss
+            line([0 1], [i i], 'Color', 'g','LineWidth',2);
             hold on;
-        elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==1 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)>=midPoint; % Lick on Distractor stimulus = False Alarm
+        elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==0 && data.(varToPlot{vp}).(varToAlign{f})(1,i,7)==4; % No Lick on Distractor stimulus = Correct Rejection
             line([2 3], [i i], 'Color', 'r','LineWidth',2);
+            hold on;
+        elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==1 && data.(varToPlot{vp}).(varToAlign{f})(1,i,7)==2; % Lick on Distractor stimulus = False Alarm
+            line([2 3], [i i], 'Color', 'g','LineWidth',2);
             hold on;
         end
     end
+%     for i=1:size(data.(varToPlot{vp}).(varToAlign{f}),2)
+%         if data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==1 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)<=midPoint; % Correct Lick on GoTrials stimulus = Hit
+%             line([0 1], [i i], 'Color', 'r','LineWidth',2);
+%             hold on;
+%         elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==0 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)<=midPoint; % No Lick on GoTrials stimulus = Miss
+%             line([0 1], [i i], 'Color', 'g','LineWidth',2);
+%             hold on;
+%         elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==0 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)>=midPoint; % No Lick on Distractor stimulus = Correct Rejection
+%             line([2 3], [i i], 'Color', 'r','LineWidth',2);
+%             hold on;
+%         elseif data.(varToPlot{vp}).(varToAlign{f})(1,i,3)==1 && data.(varToPlot{vp}).(varToAlign{f})(1,i,4)>=midPoint; % Lick on Distractor stimulus = False Alarm
+%             line([2 3], [i i], 'Color', 'g','LineWidth',2);
+%             hold on;
+%         end
+%     end
     
     xlim([-0.5 3.5])
     ylim([1 size(data.(varToPlot{vp}).(varToAlign{f}),2)])
     set(gca,'YDir','reverse');
     
-  %  if length(varToPlot)>1
-        figure(99)
+    figure(99)
+    set(gcf,'Position',positionGraph3)
+    subplot(2,1,1) %Plot Average Velocity
+    if strcmp(varToPlot{vp},'fullSession')
+        h1 = plot(time_bins,running_speed,'-k');
+        hold on
+        shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'});
+        plot(time_bins(m),running_speed(m),'og');
+        plot(time_bins(mA),running_speed(mA),'ob')
+        legendAdd{addtoLegend} = 'h1';
+    elseif strcmp(varToPlot{vp},'stimTrials') || strcmp(varToPlot{vp},'NoGoTrials')
+        h2 = plot(time_bins,running_speed,'-r');
+        hold on
+        shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-r'});
+        plot(time_bins(m),running_speed(m),'og');
+        plot(time_bins(mA),running_speed(mA),'ob')
+        legend(h2,varToPlot{vp})
+    elseif strcmp(varToPlot{vp},'cntrTrials') || strcmp(varToPlot{vp},'GoTrials')
+        h3 = plot(time_bins,running_speed,'-k');
+        hold on
+        shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'});
+        plot(time_bins(m),running_speed(m),'or');
+        plot(time_bins(mA),running_speed(mA),'or')
+        legend(h3,varToPlot{vp})
+    end
+    hold on
+    set(gca,'FontSize',16);
+    % ylim([-5 25]);
+    % xlim([min(TimeScaled), max(TimeScaled)])
+    ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
+    xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
+    
+    subplot(2,1,2) %Average licking
+    if strcmp(varToPlot{vp},'fullSession')
+        shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
+    elseif strcmp(varToPlot{vp},'stimTrials') || strcmp(varToPlot{vp},'NoGoTrials')
+        shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-r'})
+    elseif strcmp(varToPlot{vp},'cntrTrials')  || strcmp(varToPlot{vp},'GoTrials')
+        shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
+    end
+    
+    hold on
+    set(gca,'FontSize',16);
+    % ylim([-0.05 0.2]);
+    % xlim([min(TimeScaled), max(TimeScaled)])
+    ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
+    xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
+    
+    if (plotAngles==1)
+        
+        figure(100);
         set(gcf,'Position',positionGraph3)
         subplot(2,1,1) %Plot Average Velocity
-        if strcmp(varToPlot{vp},'fullSession')
-            h1 = plot(time_bins,running_speed,'-k')
+        if strncmp(varToPlot{vp},'stimAngle',9)
+            plot(time_bins,running_speed,'k','LineWidth',lineWidthPlots,'Color',  rgb(plotColor{colorTally}))
             hold on
-            shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'});
-            legendAdd{addtoLegend} = 'h1';
-        elseif strcmp(varToPlot{vp},'stimTrials') || strcmp(varToPlot{vp},'NoGoTrials')
-            h2 = plot(time_bins,running_speed,'-r')
-            hold on
-            shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-r'});
-            legend(h2,varToPlot{vp})
-        elseif strcmp(varToPlot{vp},'cntrTrials') || strcmp(varToPlot{vp},'GoTrials')
-            h3 = plot(time_bins,running_speed,'-k')
-            hold on
-            shadedErrorBar(time_bins,running_speed,running_speedSEM,{'-k'});
-            legend(h3,varToPlot{vp})
-        end
-        hold on
-        set(gca,'FontSize',16);
-        ylim([-5 25]);
-        % xlim([min(TimeScaled), max(TimeScaled)])
-        ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
-        xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-        
-        subplot(2,1,2) %Average licking
-        if strcmp(varToPlot{vp},'fullSession')
-            shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
-        elseif strcmp(varToPlot{vp},'stimTrials') || strcmp(varToPlot{vp},'NoGoTrials')
-            shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-r'})
-        elseif strcmp(varToPlot{vp},'cntrTrials')  || strcmp(varToPlot{vp},'GoTrials')
-            shadedErrorBar(time_bins,licking_rate,licking_rateSEM,{'-k'})
-        end
-        
-        hold on
-        set(gca,'FontSize',16);
-        ylim([-0.05 0.2]);
-        % xlim([min(TimeScaled), max(TimeScaled)])
-        ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
-        xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-        
-        if (plotAngles==1)
+            %             plot(time_bins(m),running_speed(m),'og');
+            %             plot(time_bins(mA),running_speed(mA),'ob')
+            set(gca,'FontSize',16);
+            ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
+            xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
+            legend(orientationfieldname)
+            %ylim([0 20]);
             
-            figure(100);
-            set(gcf,'Position',positionGraph3)
-            subplot(2,1,1) %Plot Average Velocity
-            if strncmp(varToPlot{vp},'stimAngle',9)
-                plot(time_bins,running_speed,'k','LineWidth',lineWidthPlots,'Color',  rgb(plotColor{colorTally}))
-                hold on
-                set(gca,'FontSize',16);
-                ylabel('Velocity cm/s', 'FontSize', fontSize,'fontWeight','bold');
-                xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-                legend(orientationfieldname)
-                %ylim([0 20]);
-                
-                subplot(2,1,2) %Average licking
-                plot(time_bins,licking_rate,'k','LineWidth',lineWidthPlots,'Color', rgb(plotColor{colorTally}))
-                hold on
-                colorTally = colorTally+1;
-                hold on
-                set(gca,'FontSize',16);
-                ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
-                xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
-                legend(orientationfieldname)
-            end
+            subplot(2,1,2) %Average licking
+            plot(time_bins,licking_rate,'k','LineWidth',lineWidthPlots,'Color', rgb(plotColor{colorTally}))
+            hold on
+            %             plot(time_bins(m),running_speed(m),'og');
+            %             plot(time_bins(mA),running_speed(mA),'ob')
+            colorTally = colorTally+1;
+            hold on
+            set(gca,'FontSize',16);
+            ylabel('Licks per s', 'FontSize', fontSize,'fontWeight','bold');
+            xlabel('Time (ms)', 'FontSize', fontSize,'fontWeight','bold');
+            legend(orientationfieldname)
         end
- %   end
+    end
+    
+    figure(101)
+    tempangles = data.angleOrientations;
+    latencytemp = nan(100,length(tempangles));
+    for gg = 1:length(tempangles)
+        idx =  find(data.CumulativePerformance(:,1)==(tempangles(gg)));
+        for ggh = 1:length(idx)
+            latencytemp(ggh,gg) = data.CumulativePerformance(idx(ggh),4);
+        end
+    end
+    
+    meanLatency = nanmean(latencytemp);
+    stdLatency = nanstd(latencytemp);
+    plot(tempangles,meanLatency,'o-k','MarkerSize',3,'LineWidth',3)
+    hold on
+    errorbar(tempangles,meanLatency,stdLatency,'k','Linestyle','none');
+    NumTicks = length(tempangles);
+    L = [tempangles(1) tempangles(end)];
+    % L = get(gca,'XLim');
+    labels = num2str(tempangles-270);
+    set(gca,'XTick',tempangles,'XTickLabel',labels,'XAxisLocation','top','ylim',[0 1],'Ydir','reverse')
+    view(-90,90)
+    xlabel('angles');
+    ylabel('LickLatency');
+    
+    
+%     figure(103)
+%     tempangles = data.angleOrientations;
+%     accelerationTemp = nan(100,length(tempangles));
+%     for gg = 1:length(tempangles)
+%         %only for NoGo trials
+%         idx =  find(stimType(:,2)==(tempangles(gg)));
+%         for ggh = 1:length(idx)
+%             accelerationTemp(ggh,gg) = accelerationTime(idx(ggh),2);
+%         end
+%     end
+%     
+%     meanLatency = nanmean(accelerationTemp);
+%     stdLatency = nanstd(accelerationTemp);
+%     plot(tempangles,meanLatency,'o-k','MarkerSize',3,'LineWidth',3)
+%     hold on
+%     errorbar(tempangles,meanLatency,stdLatency,'k','Linestyle','none');
+%     NumTicks = length(tempangles);
+%     L = [tempangles(1) tempangles(end)];
+%     % L = get(gca,'XLim');
+%     labels = num2str(tempangles-270);
+%     %         set(gca,'XTick',tempangles,'XTickLabel',labels,'XAxisLocation','top','ylim',[0 1],'Ydir','reverse')
+%     
+%     set(gca,'XTick',tempangles,'XTickLabel',labels,'XAxisLocation','top','Ydir','reverse')
+%     view(-90,90)
+%     xlabel('angles');
+%     ylabel('accelerationTemp');
     
 end
+
+% if (length(varToPlot)>1)
+%     figure(102)
+%     bar(nanmean(tempAccAll))
+%     set(gca,'XTick',[1:2]);
+%     set(gca,'XTickLabel',(varToPlot));
+%     ylabel('Latency to acceleration')
+%     
+% end
 
 figure(21)
 set(gcf,'Position',positionGraph2)

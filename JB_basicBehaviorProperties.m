@@ -61,6 +61,21 @@ trialType = 13;
 
 for i=1:length(DATA.allFiles);
     
+    %clean up and delete when angle is 0 (start)
+    noAngle = find(DATA.allFiles{i}.rawData(:,angle)==0);
+    for ik = 1:length(noAngle)
+        DATA.allFiles{i}.rawData(noAngle(ik),:)=nan;
+    end
+    DATA.allFiles{i}.rawData = DATA.allFiles{i}.rawData(~any(isnan(DATA.allFiles{i}.rawData),2),:);
+    
+    
+    % Delete any blips where the clock went backwards
+    negTime = find(diff(DATA.allFiles{i}.rawData(:,millis))<=0)+1;
+    for ik = 1:length(negTime)
+        DATA.allFiles{i}.rawData(negTime(ik),:)=nan;
+    end
+    DATA.allFiles{i}.rawData = DATA.allFiles{i}.rawData(~any(isnan(DATA.allFiles{i}.rawData),2),:);
+    
     %Extract basic informaiton from the data file
     basicProperties{i,1}.date = DATA.allFiles{i}.date;
     basicProperties{i,1}.datenum = DATA.allFiles{i}.dateFromFile;
@@ -160,14 +175,21 @@ for i=1:length(DATA.allFiles);
         tempSegNum = str2num(tempSeg);
         if (tempSegNum(1)==1) && (tempSegNum(2)==1)
             tempData = DATA.allFiles{i}.rawData;
+            tempData = tempData(~any(isnan(tempData),2),:);
             index = find(all(tempData==1,2));
             index = [index; length(tempData)]; %add a one to find the start of the first segment
 %             segments(1,1) = 1; %add first trial
             for kk=1:length(index)-1;
+                if ((tempData(index(kk)-1,6)==(tempData(index(kk)+1,6))))
+                    countCummulative = 0;
+                    diffCount = tempData(index(kk)-1,6);
+                else
                 countCummulative = tempData(index(kk)-1,6);
-                tempData(index(kk)+1:index(kk+1),6) = tempData(index(kk)+1:index(kk+1),6)+countCummulative;
-                basicProperties{i,1}.segments(kk,2) = countCummulative;
-                basicProperties{i,1}.segments(kk+1,1) = countCummulative+1;
+                diffCount = tempData(index(kk)-1,6);
+                end
+                tempData(index(kk)+1:index(kk+1)-1,6) = tempData(index(kk)+1:index(kk+1)-1,6)+countCummulative;
+                basicProperties{i,1}.segments(kk,2) = diffCount;
+                basicProperties{i,1}.segments(kk+1,1) = diffCount+1;
             end
             basicProperties{i,1}.segments(length(basicProperties{i,1}.segments),2) = tempData(length(tempData),6); %add last trial
         else
@@ -181,6 +203,20 @@ for i=1:length(DATA.allFiles);
     [idx, ~] = find(diff(DATA.allFiles{i}.rawData(:,trialType))>0);
     temptrialTypes = DATA.allFiles{i}.rawData(idx+2,trialType);
     
+        %Calculate Block Performance
+    blockBinSize = 8;
+    basicProperties{i,1}.temptrialTypes = temptrialTypes;
+%     blockPerformance = temptrialTypes;
+%     blockPerformance(blockPerformance==4)=1;
+%     blockPerformance(blockPerformance==1)=1;
+%     blockPerformance(blockPerformance==2)=2;
+%     blockPerformance(blockPerformance==3)=2;
+%     binspacing = 1:blockBinSize:length(blockPerformance);
+%       basicProperties{i,1}.blockPerformancePlot=[];  
+%     for s = 1:length(binspacing)-1;
+%          basicProperties{i,1}.blockPerformancePlot(s) = length(find(blockPerformance(binspacing(s):binspacing(s+1)-1)==1))/blockBinSize;
+%     end
+
     %plot the session performance
     if ~isempty(temptrialTypes)
         if (plotON==1)
@@ -211,7 +247,7 @@ for i=1:length(DATA.allFiles);
         set(gca,'YDir','reverse');
         
         %find how many consequtive trials with no lick there were
-        ff = (temptrialTypes==3) | (temptrialTypes==4); %miss and correct rejection
+        ff = (temptrialTypes(minNoTrialsTotal:end,1)==3) | (temptrialTypes(minNoTrialsTotal:end,1)==4); %miss and correct rejection
         tempCum = 1;
         if ~isempty(ff)
             cumCount = nan(length(ff),1);
@@ -223,7 +259,7 @@ for i=1:length(DATA.allFiles);
                 end
                 cumCount(v,1) = tempCum;
             end
-            idxStop = (find(cumCount>stopExThreshold));
+            idxStop = (find(cumCount>stopExThreshold))+(minNoTrialsTotal);
             if ~isempty(idxStop) && (cleanUp == 1)
                 stopIdx = idxStop(1)-stopExThreshold;
                 if stopIdx>0
@@ -539,8 +575,8 @@ end
 basicPropertiesToPlot(any(cellfun(@isempty,basicPropertiesToPlot),2),:)=[];
 %%
 % JB_plotOptogenetics(basicPropertiesToPlot,possibleAngles,1)
-% JB_plotPerformance(basicPropertiesToPlot,1)
-% JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
+JB_plotPerformance(basicPropertiesToPlot,1)
+JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
 % % 
 % % % [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,0,1,1);
 % % % %JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plotON)
