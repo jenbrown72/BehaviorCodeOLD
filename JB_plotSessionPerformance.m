@@ -111,6 +111,8 @@ for h = 1:length(numPoints)
         
         subplot(plotRows,plotCols,currPlot);
         dPrimeAngles = basicPropertiesToPlot{h,1}.pairsDprime;
+        dPrimeAngles(isnan(dPrimeAngles))=[];
+
         
         plot(basicPropertiesToPlot{h,1}.pairsDiff(1:length(dPrimeAngles)),dPrimeAngles,'*-')
         xlabel('Angle Pairs');

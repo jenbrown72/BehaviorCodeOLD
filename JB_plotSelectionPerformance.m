@@ -22,14 +22,13 @@ plotCols = 4;
 plotTally = (plotRows*plotCols);
 numFigs = 1;
 
-if ~isempty(selection)
+if exist('selection','var')
     numPoints = selection;
-else
-    
+else  
     numPoints = 1:1:length(basicPropertiesToPlot);
 end
 
-if (plotON==1)
+if (exist('plotON','var') && plotON==1)
     ff=figure;clf
     set(ff,'Position',positionGraph2);
     set(gcf,'name',tempTitle,'numbertitle','off')
@@ -138,11 +137,13 @@ for h = 1:length(numPoints)
         
         if ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==1))
             dPrimeAngles = basicPropertiesToPlot{numPoints(h),1}.pairsDprimeSTIM;
+            
         elseif ((basicPropertiesToPlot{numPoints(h),1}.optogenetics==1) && (stim==2))
             dPrimeAngles = basicPropertiesToPlot{numPoints(h),1}.pairsDprimeNoSTIM;
         else
             dPrimeAngles = basicPropertiesToPlot{numPoints(h),1}.pairsDprime;
         end
+        dPrimeAngles(any(isnan(dPrimeAngles),2),:)=[];
         plot(basicPropertiesToPlot{numPoints(h),1}.pairsDiff(1:length(dPrimeAngles)),dPrimeAngles,'o-k','MarkerFaceColor','k','LineWidth',2, 'MarkerSize',3)
         xlabel('Angle Pairs');
         ylabel('dPrime');
@@ -236,8 +237,6 @@ if ((average==1) && ~isempty(selection));
     xlabel('Angle Pairs');
     ylabel('dPrime');
     set(gca, 'Xdir', 'reverse');
-    
-    
     saveas(gca,fullfile('C:\Users\adesniklab\Documents\BehaviorRawData\currFigs\avgPsychometricCurves',baseFileName),'jpeg');
     
 end

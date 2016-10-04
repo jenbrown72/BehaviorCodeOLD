@@ -3,7 +3,19 @@ function [ data ] = JB_plotRunProperties(DATA,sessionNo)
 %%   Detailed explanation goes here
 
 tempDATA = DATA.allFiles{1,sessionNo}.rawData;
+metaData = DATA.allFiles{1,sessionNo}.metaData;
+positionGraph1 = [5 558 1847 420];
+plotColor = {'DodgerBlue','Red'};
+outcome = {'Hit & Correct Rejection';'Miss & False Alarm'};
 
+
+% find out if this was a Go <270 or Go>270
+orgGOIdx = find(strcmp('orgGOangleTab = ', metaData));
+if isempty(orgGOIdx)
+    orgGOstim = str2num(metaData{orgGOIdx,2});
+else
+    orgGOstim = str2num(metaData{orgGOIdx,2});
+end
 
 %define which txt file column the different digital inputs are read in from
 %processing
@@ -61,6 +73,7 @@ tempDATA = tempDATA(~any(isnan(tempDATA),2),:);
 
 C = unique(tempDATA(:,angle));
 data.angleOrientations = C(C>0);
+tempangles = data.angleOrientations;
 %% Divide up data into single revolutions/trials
 
 revolutionsDATA = find((diff(tempDATA(:,1)))<-100); % find where encoder is reset back to 0 to mark the end of a trial/start of enw trial
@@ -138,58 +151,190 @@ for j = 1: length(data.trial);
     
     acceleration = diff(running_speed)./diff(time_bins');
     [gg] = interp1(time_bins(1:end-1),acceleration,time_bins(1:end-1));
-    [pMin,peakMin] = min(gg);
-    [pMax,peakMax] = max(gg);
+    [pMin,peakMin] = min(gg(10:end-10));
+    [pMax,peakMax] = max(gg(10:end-10));
     
     baselineVel = nanmean(running_speed(1:baselinePeriod,1));
     acceraltionProps(j,:) = [pMin time_bins(peakMin) pMax time_bins(peakMax)];
-    
+        run_speed = running_speed';
     gg_subset = gg(1,peakMin:end);
     time_subset = time_bins(1,peakMin:end-1);
-    idxIn = dsearchn(gg_subset',0);
-    inflectionPoint(j,:) = time_subset(idxIn);
+        running_speed_subset = run_speed(1,peakMin:end-1);
+          tallyC=1;
+    clear idxIn;
+    idxIn = NaN;
     
-    toPlot(j,1) =  time_subset(idxIn);
+          for kk = 1:length(gg_subset)-1
+                if ((gg_subset(kk)<0) && (gg_subset(kk+1)>0))
+                    idxIn(tallyC,1) = kk;
+                    tallyC = tallyC+1;
+                end
+            end
+%     idxIn = dsearchn(gg_subset',0);
+if ~isnan(idxIn)
+    inflectionPoint(j,:) = time_subset(idxIn(1)); 
+else
+        inflectionPoint(j,:) = NaN;
+end 
+%     
+%     idxIn = dsearchn(gg_subset',0);
+%     inflectionPoint(j,:) = time_subset(idxIn);
+    
+    %smooth data and find slopes
+    %low pass filter acceleration data
+    smoothed_gg = smooth(gg);
+    slope_gg = diff(smoothed_gg)/diff(time_bins(1:end-1)');
+    %max deceleration
+    [min_slope min_slopeIdx] = min(slope_gg(10:end-10,1));
+   
+    if ~isnan(idxIn)
+    toPlot(j,1) =  time_subset(idxIn(1));
+    else 
+        toPlot(j,1) = nan;
+    end
     toPlot(j,2) = time_bins(peakMin);
     toPlot(j,3) = time_bins(peakMax);
     toPlot(j,4) = baselineVel-(running_speed(peakMin));
+    toPlot(j,5) = time_bins(min_slopeIdx);
     
     performance(j,1) = data.trial{j}.filteredDATA(1,angle);
     performance(j,2) = data.trial{j}.raw(find(data.trial{j}.raw(:,trialType)>0,1),trialType);
 %     
 %     figure(77);clf
-%     subplot(2,1,1)
+%     subplot(3,1,1)
 %     plot(time_bins,running_speed)
 %     hold on
 %     plot([inflectionPoint(j,:) inflectionPoint(j,:)],[min(ylim) max(ylim)],'b--','LineWidth',2)
-%     plot(time_bins(peakMin),pMin,'*g')
-%     plot(time_bins(peakMax),pMax,'*r')
+%     plot(time_bins(min_slopeIdx),running_speed(min_slopeIdx),'*m')
+%     plot(time_bins(peakMin),running_speed(peakMin),'*g')
+%     plot(time_bins(peakMax),running_speed(peakMax),'*r')
+%     ylabel('Velocity')
 %     
-%     subplot(2,1,2)
+%     subplot(3,1,2)
 %     plot(time_bins(1:end-1),gg)
 %     hold on
 %     plot([inflectionPoint(j,:) inflectionPoint(j,:)],[min(ylim) max(ylim)],'b--','LineWidth',2)
-%     plot(time_bins(peakMin),pMin,'*g')
-%     plot(time_bins(peakMax),pMax,'*r')
+%     plot(time_bins(min_slopeIdx),gg(min_slopeIdx),'*m')
+%     plot(time_bins(peakMin),gg(peakMin),'*g')
+%     plot(time_bins(peakMax),gg(peakMax),'*r')
+%     ylabel('Acceleration')
+%     
+%     subplot(3,1,3)
+%     plot(time_bins(1:end-2),slope_gg)
+%     hold on
+%     plot([inflectionPoint(j,:) inflectionPoint(j,:)],[min(ylim) max(ylim)],'b--','LineWidth',2)
+%     plot(time_bins(min_slopeIdx),slope_gg(min_slopeIdx),'*m')
+%     plot(time_bins(peakMin),slope_gg(peakMin),'*g')
+%     plot(time_bins(peakMax),slope_gg(peakMax),'*r')
+%     ylabel('Slope')
+%     
+        
+    figure(78);
     
-    %     jjj = waitforbuttonpress;
+    subplot(2,length(tempangles)/2,find(tempangles==data.trial{j}.filteredDATA(1,angle)))
+    if ((performance(j,2)==1) || performance(j,2)==4);
+    plot(time_bins,running_speed,'Color',rgb(plotColor{1}))
+    else
+        plot(time_bins,running_speed,'Color',rgb(plotColor{2}))
+    end
+    hold on
+
+%     plot([inflectionPoint(j,:) inflectionPoint(j,:)],[min(ylim) max(ylim)],'b--','LineWidth',2)
+%     plot(time_bins(min_slopeIdx),running_speed(min_slopeIdx),'*m')
+%     plot(time_bins(peakMin),running_speed(peakMin),'*g')
+%     plot(time_bins(peakMax),running_speed(peakMax),'*r')
+    ylabel('Velocity')
+    xlab = num2str(data.trial{j}.filteredDATA(1,angle)-270);
+ xlabel(strcat('angle',xlab))
+%         subplot(length(tempangles),1,find(tempangles==data.trial{j}.filteredDATA(1,angle)))
+%     if ((performance(j,2)==1) || performance(j,2)==4);
+%     plot(time_bins(1:end-1),gg,'Color',rgb(plotColor{1}))
+%     else
+%         plot(time_bins(1:end-1),gg,'Color',rgb(plotColor{2}))
+%     end
+%     hold on
+%     plot([inflectionPoint(j,:) inflectionPoint(j,:)],[min(ylim) max(ylim)],'b--','LineWidth',2)
+%     plot(time_bins(min_slopeIdx),gg(min_slopeIdx),'*m')
+%     plot(time_bins(peakMin),gg(peakMin),'*g')
+%     plot(time_bins(peakMax),gg(peakMax),'*r')
+%     ylabel('Acceleration')
+%     
+%             subplot(length(tempangles),1,find(tempangles==data.trial{j}.filteredDATA(1,angle)))
+%     if ((performance(j,2)==1) || performance(j,2)==4);
+%     plot(time_bins(1:end-2),slope_gg,'Color',rgb(plotColor{1}))
+%     else
+%         plot(time_bins(1:end-2),slope_gg,'Color',rgb(plotColor{2}))
+%     end
+%     plot(time_bins(1:end-2),slope_gg)
+%     hold on
+%     plot([inflectionPoint(j,:) inflectionPoint(j,:)],[min(ylim) max(ylim)],'b--','LineWidth',2)
+%     plot(time_bins(min_slopeIdx),slope_gg(min_slopeIdx),'*m')
+%     plot(time_bins(peakMin),slope_gg(peakMin),'*g')
+%     plot(time_bins(peakMax),slope_gg(peakMax),'*r')
+%     ylabel('Slope')
+%     
+    
+    %         jjj = waitforbuttonpress;
 end
+    figure(78);
+hLL = legend(outcome)
+newPosition = [0 0 0.1 0.1];
+set(hLL, 'Position', newPosition, 'Box', 'off')
 
-
-clear accelerationTemp
+%%
+clear accelerationTemp meanData semData
 % varLabels = {'inflectionPoint';'minAcceleration';'MaxAcceleration'}
-varLabels = {'inflectionPoint';'minAcceleration';'MaxAcceleration';'peakVelChange'};
+varLabels = {'inflection Point';'Min Acceleration Time';'Max Acceleration Time';'peak Vel Change';'min slope'};
 outcome = {'Hit & Correct Rejection';'Miss & False Alarm'};
-% outcome = {'Correct Rejection';'False Alarm'}
-outcomePoints = [1 4;2 3];
+outcomePoints = [1 4;2 3];%HIT1,FA2,MISS3,CR4,
+% outcomePoints = [1 1;2 2];%HIT1,FA2,MISS3,CR4,
 figure(103)
-tempangles = data.angleOrientations;
+
 % tempangles(tempangles<270)=[];
 
 accelerationTemp = nan(100,length(tempangles));
 plotNo = 1;
 
 for gi = 1:length(outcome)
+    clear accelerationTemp
+    for gh = 1:length(varLabels);
+        for gg = 1:length(tempangles) 
+            tally = 1;
+            %only for NoGo trials
+            idx =  find(performance(:,1)==(tempangles(gg)));
+            for ggh = 1:length(idx)
+                if ((performance(idx(ggh),2)==outcomePoints(gi,1)) || (performance(idx(ggh),2)==outcomePoints(gi,2)))
+                    accelerationTemp(tally,gg) = toPlot(idx(ggh),gh);
+                    tally = tally+1;
+                end
+            end
+        end
+        
+        subplot(length(outcome),length(varLabels),plotNo)
+        [meanData,~,~,semData] = JB_calBasicStats(accelerationTemp);
+        plot(tempangles,meanData,'o-k','MarkerSize',3,'LineWidth',3)
+        hold on
+        errorbar(tempangles,meanData,semData,'k','Linestyle','none');
+        labels = num2str(tempangles-270);
+        
+        set(gca,'XTick',tempangles,'XTickLabel',labels,'XAxisLocation','top','Ydir','reverse')
+        view(-90,90)
+        xlabel('angles');
+        ylabel(varLabels(gh));
+        title(outcome{gi});
+        plotNo = plotNo+1;
+    end
+end
+
+figure(114);clf
+set(gcf,'Position',positionGraph1)
+tempangles = data.angleOrientations;
+% tempangles(tempangles<270)=[];
+accelerationTemp = nan(100,length(tempangles));
+
+for gi = 1:length(outcome)
+      clear accelerationTemp
+    plotNo=1;
     for gh = 1:length(varLabels);
         for gg = 1:length(tempangles)
             tally = 1;
@@ -203,23 +348,32 @@ for gi = 1:length(outcome)
             end
         end
         
-        subplot(length(outcome),length(varLabels),plotNo)
-        meanLatency = nanmean(accelerationTemp);
-        stdLatency = nanstd(accelerationTemp);
-        plot(tempangles,meanLatency,'o-k','MarkerSize',3,'LineWidth',3)
+        subplot(1,length(varLabels),plotNo)
+        [meanData,~,~,semData] = JB_calBasicStats(accelerationTemp);
         hold on
-        errorbar(tempangles,meanLatency,stdLatency,'k','Linestyle','none');
+        errorbar(tempangles,meanData,semData,'o-','Color',rgb(plotColor{gi}),'MarkerSize',3,'LineWidth',3);
         labels = num2str(tempangles-270);
         
         set(gca,'XTick',tempangles,'XTickLabel',labels,'XAxisLocation','top','Ydir','reverse')
         view(-90,90)
         xlabel('angles');
+        ylimit = ylim;
+        if ((gi==2) && (plotNo==length(varLabels)))
+            if (orgGOstim==1)
+                text(tempangles(1),ylimit(2)+(ylimit(2)/5),'GO');
+                text(tempangles(end),ylimit(2)+(ylimit(2)/5),'NOGO');
+            else
+                text(tempangles(1),ylimit(2),'NOGO');
+                text(tempangles(end),ylimit(2),'GO');
+            end
+        end
         ylabel(varLabels(gh));
-        title(outcome{gi});
         plotNo = plotNo+1;
     end
 end
-
+hLL = legend(outcome);
+newPosition = [0 0 0.1 0.1];
+set(hLL, 'Position', newPosition, 'Box', 'off')
 
 figure(25)
 plot(acceraltionProps(:,2),acceraltionProps(:,1),'*g')

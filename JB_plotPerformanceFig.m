@@ -44,10 +44,11 @@ end
 ColorCodeColors = [0.9;0.8;0.6;0.4;0.2;0];
 
 for jj = 1:length(basicPropertiesToPlot);
-    dataTemp(jj,:)  = [basicPropertiesToPlot{jj,1}.dprime colorCode(jj,1)];
+    dataTemp(jj,:)  = [basicPropertiesToPlot{jj,1}.dprime colorCode(jj,1) basicPropertiesToPlot{jj,1}.dPrimeCatch];
 end
 
-sessionNoStop = (find((dataTemp(:,2)==5),1))+1;
+% sessionNoStop = (find((dataTemp(:,2)==5),1))+1;
+sessionNoStop = length(dataTemp)-5;
 
 %plot performance
 diffData = diff(dataTemp(:,2));
@@ -60,6 +61,9 @@ for jj = 1:sessionNoStop-1;
         plot([numPoints(jj) numPoints(jj+1)],[basicPropertiesToPlot{jj,1}.sessionperformance basicPropertiesToPlot{jj+1,1}.sessionperformance],'o-','MarkerSize', markerSizePlots, 'linewidth',2,'MarkerEdgeColor',[0.4,ColorCodeColors(colorCode(jj)),0.8], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
         hold on
     end
+    
+  plot([numPoints(jj) numPoints(jj+1)],[basicPropertiesToPlot{jj,1}.performanceCatch basicPropertiesToPlot{jj+1,1}.performanceCatch],'o-','MarkerSize', markerSizePlots, 'linewidth',2,'MarkerEdgeColor','k', 'MarkerFaceColor','k','Color', 'k');
+
 end
 plot([0 24],percentCorrectChance,'k--')
 ylim([0 1])
@@ -77,6 +81,8 @@ for jj = 1:sessionNoStop-1;
         plot([numPoints(jj) numPoints(jj+1)],[basicPropertiesToPlot{jj,1}.dprime basicPropertiesToPlot{jj+1,1}.dprime],'o-','MarkerSize', 10, 'linewidth',2,'MarkerEdgeColor',[0.4,ColorCodeColors(colorCode(jj)),0.8], 'MarkerFaceColor',[0.4,ColorCodeColors(colorCode(jj)),0.8],'Color', [0.4,ColorCodeColors(colorCode(jj)),0.8]);
         hold on
     end
+      plot([numPoints(jj) numPoints(jj+1)],[basicPropertiesToPlot{jj,1}.dPrimeCatch basicPropertiesToPlot{jj+1,1}.dPrimeCatch],'o-','MarkerSize', markerSizePlots, 'linewidth',2,'MarkerEdgeColor','k', 'MarkerFaceColor','k','Color', 'k');
+
 end
 hold on
 plot([0 24],dprimeThreshold,'k--')

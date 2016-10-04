@@ -2,15 +2,16 @@ function [newTxtFileCount] = JB_loadTxtFile(MouseID)
 
 % Initialize variables.
 delimiter = ',';
-endRow = 30;
+endRow = 34;
 startRow = 35;
 
 % Read columns of data as strings:
 % For more information, see the TEXTSCAN documentation.
 formatSpecMetaDATA = '%s%s%[^\n\r]';
-formatSpecTempDATA = '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%[^\n\r]';
+formatSpecTempDATA = '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%[^\n\r]';
 
-startDir = 'C:\Users\adesniklab\Documents\BehaviorRawData\MouseID\';
+startDir = cd;
+% startDir = 'C:\Users\adesniklab\Documents\BehaviorRawData\MouseID\';
 
 if nargin==1; % if a filename was inputted into function
     
@@ -68,7 +69,7 @@ for i=1:size((D),1);
         fileID = fopen(D(i).name,'r');
         % Read columns of data according to format string.
         dataArray = textscan(fileID, formatSpecMetaDATA, endRow, 'Delimiter', delimiter, 'ReturnOnError', false);
-        dataArrayTempDATA = textscan(fileID, formatSpecTempDATA, 'Delimiter', delimiter, 'HeaderLines' ,startRow-1, 'ReturnOnError', false);
+        dataArrayTempDATA = textscan(fileID, formatSpecTempDATA, 'Delimiter', delimiter, 'HeaderLines' ,startRow, 'ReturnOnError', false);
         % Close the text file.
         fclose(fileID);
         
@@ -77,7 +78,7 @@ for i=1:size((D),1);
         % metaData = raw;
         
         %For tempDATA
-        tempDATA = csvread(D(i).name,30,0); % Dont read first line - sometimes contains a string 'A', start from row 26 as the top is metaData
+        tempDATA = csvread(D(i).name,startRow,0); % Dont read first line - sometimes contains a string 'A', start from row 26 as the top is metaData
         tempDATA(length(tempDATA),:) = []; %Delete the last line incase not fully read
         
         disp(' ')
@@ -85,10 +86,12 @@ for i=1:size((D),1);
         
         C = unique(tempDATA(:,11)); %Identify how many angles were presented
         
-      
-            stimNumber = size(find(ismember(stimAngles, C)),2);
-            currFileNo = length(DATA.loadedFiles)+1;
-              if length(C)>1
+        stimNumber = size(find(ismember(stimAngles, C)),2);
+        currFileNo = length(DATA.loadedFiles)+1;
+        recordingDuration = (((tempDATA(end,7)-tempDATA(1,7))/1000)/60);
+        % 
+             if  recordingDuration>1 %if recording is longer than a minute
+       
             %Save into data format
             DATA.allFiles{currFileNo} = D(i);
             DATA.allFiles{currFileNo}.rawData = tempDATA;
@@ -98,7 +101,7 @@ for i=1:size((D),1);
             disp(' ')
             filed = 1;
             newTxtFileCount = newTxtFileCount+1;
-              
+            
             %Extract date from filename
             tempName = DATA.allFiles{currFileNo}.name;
             startIdx = findstr('_201',tempName);
@@ -119,14 +122,20 @@ for i=1:size((D),1);
             toDelete = strfind(tempName,'_');
             tempName(toDelete)=[];
             DATA.allFiles{currFileNo}.dateFromFile = tempName;
-              end
-   
-        
+            
+        end
     end
     
     if (filed==0)
         countNumber = max(tempDATA(:,6));
-        if (countNumber<12)
+        if (recordingDuration<1)
+            msgbox(strcat(D(i).name,' was not uploaded - recordingDuration < 1 minute'));
+            disp(' ')
+            disp(' ')
+            disp(['WARNING..... NO FOLDER FOR: ' D(i).name ])
+            disp(' ')
+            disp(' ')
+        elseif (countNumber<12)
             msgbox(strcat(D(i).name,' was not uploaded - count < 12'));
             disp(' ')
             disp(' ')

@@ -9,12 +9,16 @@ function [] = JB_sortTxtFiles()
 
 
 %Where are the txt files being loaded and sorted to
-outputdir = 'C:\Users\adesniklab\Documents\BehaviorRawData\MouseIDs\';
+
+currcd = cd;
+ outputdir = char(strcat(currcd, '\MouseIDs\'));
+% outputdir = 'C:\Users\adesniklab\Documents\BehaviorRawData\MouseIDs\';
 cd(outputdir);
 idDir = dir; %get a list of all MouseID folders
 
 %Where are the unsorted txt files stored
-txtdir = 'C:\Users\adesniklab\Documents\BehaviorRawData\TxtFiles';
+ txtdir = char(strcat(currcd, '\TxtFiles'));
+% txtdir = 'C:\Users\adesniklab\Documents\BehaviorRawData\TxtFiles';
 cd(txtdir);
 txtFiles = dir('*.txt'); %get a list of all data txt files
 
