@@ -2,8 +2,8 @@ function [newTxtFileCount] = JB_loadTxtFile(MouseID)
 
 % Initialize variables.
 delimiter = ',';
-endRow = 34;
-startRow = 35;
+endRow = 36;
+startRow = 37;
 
 % Read columns of data as strings:
 % For more information, see the TEXTSCAN documentation.
@@ -129,24 +129,24 @@ for i=1:size((D),1);
     if (filed==0)
         countNumber = max(tempDATA(:,6));
         if (recordingDuration<1)
-            msgbox(strcat(D(i).name,' was not uploaded - recordingDuration < 1 minute'));
+         %   msgbox(strcat(D(i).name,' was not uploaded - recordingDuration < 1 minute'));
             disp(' ')
             disp(' ')
-            disp(['WARNING..... NO FOLDER FOR: ' D(i).name ])
+            disp(['WARNING..... Recording Duration <1min for : ' D(i).name 'Not uploaded'])
             disp(' ')
             disp(' ')
         elseif (countNumber<12)
-            msgbox(strcat(D(i).name,' was not uploaded - count < 12'));
+         %   msgbox(strcat(D(i).name,' was not uploaded - count < 12'));
             disp(' ')
             disp(' ')
-            disp(['WARNING..... NO FOLDER FOR: ' D(i).name ])
+            disp(['WARNING..... Less than 12 trials for : ' D(i).name 'Not uploaded'])
             disp(' ')
             disp(' ')
         else
-            msgbox(strcat(D(i).name,' was not uploaded - stimNumber = ' , num2str(stimNumber)));
+         %   msgbox(strcat(D(i).name,' was not uploaded - stimNumber = ' , num2str(stimNumber)));
             disp(' ')
             disp(' ')
-            disp(['WARNING..... NO FOLDER FOR: ' D(i).name ])
+            disp(['WARNING..... error in stimulus number for : ' D(i).name 'Not uploaded'])
             disp(' ')
             disp(' ')
         end

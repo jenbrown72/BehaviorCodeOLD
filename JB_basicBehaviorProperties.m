@@ -82,7 +82,10 @@ for i=1:length(DATA.allFiles);
     [idxCatchStop, ~] = find(diff(DATA.allFiles{i}.rawData(:,catchTrial))<0);
     
     if (length(idxCatchStart))==(length(idxCatchStop))
-    else
+    elseif isempty(idxCatchStart)
+             continue
+        else
+
         DATA.allFiles{i}.rawData(idxCatchStart(end):end,:)=[];
     end
     
@@ -720,9 +723,9 @@ basicPropertiesToPlot(any(cellfun(@isempty,basicPropertiesToPlot),2),:)=[];
 % basicPropertiesToPlot = basicPropertiesToPlot';
 %%
 
-% JB_plotPerformance(basicPropertiesToPlot,1)
+JB_plotPerformance(basicPropertiesToPlot,1)
 % JB_plotOptogenetics(basicPropertiesToPlot,1)
-% JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
+JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,1)
 % %
 % % % [DATAavg] = JB_plotSelectionPerformance(basicPropertiesToPlot,possibleAngles,plotON,0,1,1);
 % % % %JB_plotSessionPerformance(basicPropertiesToPlot,possibleAngles,plotON)
